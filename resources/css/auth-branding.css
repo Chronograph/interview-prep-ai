@@ -1,0 +1,177 @@
+/* Custom Auth Branding Styles */
+
+/* Brand Colors */
+:root {
+    --brand-primary: #ea580c;
+    --brand-secondary: #fb923c;
+    --brand-accent: #fed7aa;
+    --brand-dark: #9a3412;
+}
+
+/* Custom animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: calc(200px + 100%) 0;
+    }
+}
+
+/* Auth page animations */
+.auth-container {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.auth-icon {
+    animation: pulse 2s infinite;
+}
+
+/* Enhanced button styles */
+.btn-brand {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-brand::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: left 0.5s;
+}
+
+.btn-brand:hover::before {
+    left: 100%;
+}
+
+/* Loading states */
+.loading-shimmer {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 25%,
+        #e0e0e0 50%,
+        #f0f0f0 75%
+    );
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.dark .loading-shimmer {
+    background: linear-gradient(
+        90deg,
+        #374151 25%,
+        #4b5563 50%,
+        #374151 75%
+    );
+    background-size: 200px 100%;
+}
+
+/* Custom focus styles */
+.focus-brand:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: var(--brand-primary);
+    ring-opacity: 0.5;
+    border-color: var(--brand-primary);
+}
+
+/* Brand typography */
+.brand-heading {
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+/* Success states */
+.success-glow {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+/* Error states */
+.error-shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+    .auth-container {
+        padding: 1rem;
+    }
+    
+    .auth-icon {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .brand-heading {
+        font-size: 1.875rem;
+    }
+}
+
+/* Dark mode enhancements */
+.dark .btn-brand {
+    box-shadow: 0 4px 14px 0 rgba(234, 88, 12, 0.3);
+}
+
+.dark .btn-brand:hover {
+    box-shadow: 0 6px 20px 0 rgba(234, 88, 12, 0.4);
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    .auth-container,
+    .auth-icon,
+    .btn-brand::before {
+        animation: none;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .btn-brand {
+        border: 2px solid var(--brand-dark);
+    }
+    
+    .focus-brand:focus {
+        outline: 3px solid var(--brand-primary);
+        outline-offset: 2px;
+    }
+}
