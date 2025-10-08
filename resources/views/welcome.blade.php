@@ -3,90 +3,212 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ config('app.name', 'Laravel') }}</title>
-        
+        <title>{{ config('app.name', 'Hire Camp') }} - Ace Your Next Interview</title>
+        <meta name="description" content="Master your interview skills with AI-powered practice sessions, personalized feedback, and comprehensive preparation tools.">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-        
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
         <!-- Styles -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="antialiased">
-        <div class="relative sm:flex sm:justify-center sm:items-center min-h-screen bg-dots-darker bg-center bg-gray-100 selection:bg-red-500 selection:text-white">
-            @if (Route::has('login'))
-                <div class="sm:fixed sm:top-0 sm:right-0 p-6 text-right z-10">
-                    @auth
-                        <a href="{{ url('/dashboard') }}" class="font-semibold text-gray-600 hover:text-gray-900 focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Dashboard</a>
-                    @else
-                        <a href="{{ route('login') }}" class="font-semibold text-gray-600 hover:text-gray-900 focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Log in</a>
+    <body class="antialiased bg-white">
+        <!-- Top Dark Gray Bar -->
+        <div class="bg-gray-800 h-1"></div>
 
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="ml-4 font-semibold text-gray-600 hover:text-gray-900 focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Register</a>
-                        @endif
-                    @endauth
-                </div>
-            @endif
-
-            <div class="max-w-7xl mx-auto p-6 lg:p-8">
-                <div class="flex justify-center">
-                    <svg class="w-16 h-16 text-red-500" viewBox="0 0 62 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="m61.1356 29.4611c0-16.3172-13.2441-29.5611-29.5611-29.5611s-29.5611 13.244-29.5611 29.5611c0 16.3172 13.244 29.5611 29.5611 29.5611s29.5611-13.244 29.5611-29.5611" fill="currentColor"/>
-                        <path d="m60.1356 28.4611c0-15.7646-12.7965-28.5611-28.5611-28.5611s-28.5611 12.7965-28.5611 28.5611c0 15.7646 12.7965 28.5611 28.5611 28.5611s28.5611-12.7965 28.5611-28.5611" fill="white"/>
-                        <path d="m39.3025 33.9423c0 6.2756-5.0869 11.3625-11.3625 11.3625s-11.3625-5.0869-11.3625-11.3625c0-6.2756 5.0869-11.3625 11.3625-11.3625s11.3625 5.0869 11.3625 11.3625z" fill="currentColor"/>
-                    </svg>
-                </div>
-
-                <div class="mt-16">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-                        <div class="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-lg shadow-2xl shadow-gray-500/20 flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
-                            <div>
-                                <div class="h-16 w-16 bg-red-50 flex items-center justify-center rounded-full">
-                                    <svg class="w-7 h-7 stroke-red-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                                    </svg>
+        <!-- Navigation -->
+        <nav class="bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center">
+                            <a href="{{ url('/') }}" class="group">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                                        <span class="text-white font-bold text-lg">H</span>
+                                    </div>
+                                    <span class="text-xl font-bold text-gray-900 hidden sm:block">
+                                        Hire Camp
+                                    </span>
                                 </div>
-
-                                <h2 class="mt-6 text-xl font-semibold text-gray-900">Interview Prep AI</h2>
-
-                                <p class="mt-4 text-gray-500 text-sm leading-relaxed">
-                                    Prepare for your next technical interview with AI-powered practice sessions, resume optimization, and personalized feedback.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-lg shadow-2xl shadow-gray-500/20 flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
-                            <div>
-                                <div class="h-16 w-16 bg-red-50 flex items-center justify-center rounded-full">
-                                    <svg class="w-7 h-7 stroke-red-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443a55.381 55.381 0 015.25 2.882V15" />
-                                    </svg>
-                                </div>
-
-                                <h2 class="mt-6 text-xl font-semibold text-gray-900">Get Started</h2>
-
-                                <p class="mt-4 text-gray-500 text-sm leading-relaxed">
-                                    @auth
-                                        Welcome back! <a href="{{ url('/dashboard') }}" class="text-red-500 hover:underline">Go to your dashboard</a> to continue your interview preparation.
-                                    @else
-                                        <a href="{{ route('register') }}" class="text-red-500 hover:underline">Create an account</a> or <a href="{{ route('login') }}" class="text-red-500 hover:underline">sign in</a> to start preparing for your interviews.
-                                    @endauth
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-center mt-16 px-0 sm:items-center sm:justify-between">
-                    <div class="text-center text-sm text-gray-500 sm:text-left">
-                        <div class="flex items-center gap-4">
-                            <a href="https://laravel.com" class="group inline-flex items-center hover:text-gray-700 focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">
-                                Laravel v{{ $laravelVersion }} (PHP v{{ $phpVersion }})
                             </a>
                         </div>
                     </div>
+                    <div class="flex items-center space-x-4">
+                        @auth
+                            <a href="{{ url('/dashboard') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-150">Dashboard</a>
+                        @else
+                            <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Sign In</a>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-150">Get Started</a>
+                            @endif
+                        @endauth
+                    </div>
                 </div>
             </div>
-        </div>
+        </nav>
+
+        <!-- Light Gray Separator Line -->
+        <div class="border-b border-gray-200"></div>
+
+        <!-- Hero Section -->
+        <section class="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 lg:py-32">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                        Ace Your Next
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Interview</span>
+                    </h1>
+                    <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                        Master your interview skills with AI-powered practice sessions, personalized feedback, and comprehensive preparation tools designed to boost your confidence.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        @auth
+                            <a href="{{ url('/dashboard') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition duration-150 shadow-lg hover:shadow-xl">
+                                Continue Practicing
+                            </a>
+                        @else
+                            <a href="{{ route('register') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition duration-150 shadow-lg hover:shadow-xl">
+                                Start Free Trial
+                            </a>
+                            <a href="{{ route('login') }}" class="border-2 border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold transition duration-150">
+                                Sign In
+                            </a>
+                        @endauth
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Everything You Need to Succeed</h2>
+                    <p class="text-xl text-gray-600 max-w-2xl mx-auto">Comprehensive tools and AI-powered insights to help you prepare for any interview scenario.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition duration-300">
+                        <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">AI Mock Interviews</h3>
+                        <p class="text-gray-600">Practice with realistic AI-powered interviews tailored to your target role and experience level.</p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-lg transition duration-300">
+                        <div class="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Resume Optimization</h3>
+                        <p class="text-gray-600">Get AI-powered suggestions to optimize your resume for specific job postings and industries.</p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="text-center p-6 rounded-xl bg-gradient-to-br from-green-50 to-green-100 hover:shadow-lg transition duration-300">
+                        <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Performance Analytics</h3>
+                        <p class="text-gray-600">Track your progress with detailed analytics and personalized improvement recommendations.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="py-20 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trusted by Job Seekers</h2>
+                    <p class="text-xl text-gray-600">See how Hire Camp has helped others land their dream jobs.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold">SJ</span>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="font-semibold text-gray-900">Sarah Johnson</h4>
+                                <p class="text-gray-600 text-sm">Software Engineer</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700">"The AI mock interviews were incredibly realistic. I felt so much more confident going into my actual interviews!"</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <span class="text-purple-600 font-semibold">MC</span>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="font-semibold text-gray-900">Michael Chen</h4>
+                                <p class="text-gray-600 text-sm">Product Manager</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700">"The resume optimization feature helped me get 3x more interview callbacks. Absolutely worth it!"</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <span class="text-green-600 font-semibold">EP</span>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="font-semibold text-gray-900">Emily Parker</h4>
+                                <p class="text-gray-600 text-sm">Data Scientist</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700">"The detailed feedback and analytics helped me identify my weak points and improve systematically."</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Ace Your Next Interview?</h2>
+                <p class="text-xl text-blue-100 mb-8">Join thousands of successful job seekers who've improved their interview skills with our AI-powered platform.</p>
+                @auth
+                    <a href="{{ url('/dashboard') }}" class="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-semibold transition duration-150 shadow-lg hover:shadow-xl">
+                        Go to Dashboard
+                    </a>
+                @else
+                    <a href="{{ route('register') }}" class="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-semibold transition duration-150 shadow-lg hover:shadow-xl">
+                        Start Your Free Trial
+                    </a>
+                @endauth
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-900 text-white py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex items-center mb-4 md:mb-0">
+                        <svg class="w-8 h-8 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <span class="ml-2 text-xl font-bold">Hire Camp</span>
+                    </div>
+                    <div class="text-gray-400 text-sm">
+                        © {{ date('Y') }} Hire Camp. All rights reserved.
+                    </div>
+                </div>
+            </div>
+        </footer>
     </body>
 </html>

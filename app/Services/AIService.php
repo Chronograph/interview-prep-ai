@@ -2,73 +2,83 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Prism\Prism\Enums\Provider;
+use Prism\Prism\Exceptions\PrismException;
+use Prism\Prism\Prism;
+use Prism\Prism\ValueObjects\Messages\SystemMessage;
+use Prism\Prism\ValueObjects\Messages\UserMessage;
 
 class AIService
 {
-    private string $apiKey;
-    private string $baseUrl = 'https://api.openai.com/v1';
-    private string $defaultModel = 'gpt-4';
+    private string $defaultModel;
+
+    private Provider $provider;
+
+    private float $temperature;
 
     public function __construct()
     {
-        $this->apiKey = config('services.openai.api_key');
-        
-        if (!$this->apiKey) {
-            throw new \Exception('OpenAI API key not configured');
-        }
+        $providerName = config('prism.default_provider', 'lmstudio');
+        $this->provider = match ($providerName) {
+            'openai' => Provider::OpenAI,
+            'anthropic' => Provider::Anthropic,
+            'ollama' => Provider::Ollama,
+            'lmstudio' => Provider::OpenAI, // LM Studio uses OpenAI-compatible API
+            default => Provider::OpenAI
+        };
+
+        $this->defaultModel = config('prism.providers.'.$providerName.'.model', env('PRISM_LMSTUDIO_MODEL', 'phi-3.1-mini-4k-instruct'));
+        $this->temperature = config('prism.temperature', 0.7);
     }
 
-    public function generateResponse(
-        string $prompt,
-        array $options = []
-    ): string {
-        $model = $options['model'] ?? $this->defaultModel;
-        $temperature = $options['temperature'] ?? 0.7;
-        $maxTokens = $options['max_tokens'] ?? 1000;
-        $systemPrompt = $options['system_prompt'] ?? null;
-
-        $messages = [];
-        
-        if ($systemPrompt) {
-            $messages[] = ['role' => 'system', 'content' => $systemPrompt];
-        }
-        
-        $messages[] = ['role' => 'user', 'content' => $prompt];
-
+    public function generateResponse(string $prompt, ?string $systemPrompt = null): string
+    {
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->timeout(60)->post($this->baseUrl . '/chat/completions', [
-                'model' => $model,
-                'messages' => $messages,
-                'temperature' => $temperature,
-                'max_tokens' => $maxTokens,
-            ]);
+            $messages = [];
 
-            if (!$response->successful()) {
-                throw new \Exception('OpenAI API request failed: ' . $response->body());
+            if ($systemPrompt) {
+                $messages[] = new SystemMessage($systemPrompt);
             }
 
-            $data = $response->json();
-            
-            if (!isset($data['choices'][0]['message']['content'])) {
-                throw new \Exception('Invalid response format from OpenAI API');
-            }
+            $messages[] = new UserMessage($prompt);
 
-            return trim($data['choices'][0]['message']['content']);
+            // Get provider configuration
+            $providerName = config('prism.default_provider', 'lmstudio');
+            $providerConfig = config("prism.providers.{$providerName}");
 
-        } catch (\Exception $e) {
-            Log::error('OpenAI API request failed', [
+            $clientOptions = [
+                'base_uri' => $providerConfig['url'] ?? null,
+            ];
+
+            // Note: Prism handles authentication automatically through its provider configuration
+            // No need to manually add Authorization headers
+
+            $response = Prism::text()
+                ->using('openai', $this->defaultModel, $providerConfig)
+                ->usingTemperature($this->temperature)
+                ->withMessages($messages)
+                ->generate();
+
+            return trim($response->text);
+
+        } catch (PrismException $e) {
+            Log::error('AI API request failed', [
                 'error' => $e->getMessage(),
-                'model' => $model,
+                'model' => $this->defaultModel,
                 'prompt_length' => strlen($prompt),
             ]);
-            
-            throw new \Exception('AI service unavailable: ' . $e->getMessage());
+
+            throw new \Exception('AI service unavailable: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected AI service error', [
+                'error' => $e->getMessage(),
+                'model' => $this->defaultModel,
+                'prompt_length' => strlen($prompt),
+            ]);
+
+            throw new \Exception('AI service unavailable: '.$e->getMessage());
         }
     }
 
@@ -77,47 +87,45 @@ class AIService
         array $options = []
     ): array {
         $model = $options['model'] ?? $this->defaultModel;
-        $temperature = $options['temperature'] ?? 0.7;
-        $maxTokens = $options['max_tokens'] ?? 1000;
+        $temperature = $options['temperature'] ?? $this->temperature;
 
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->timeout(60)->post($this->baseUrl . '/chat/completions', [
-                'model' => $model,
-                'messages' => $messages,
-                'temperature' => $temperature,
-                'max_tokens' => $maxTokens,
-            ]);
-
-            if (!$response->successful()) {
-                throw new \Exception('OpenAI API request failed: ' . $response->body());
+            $prismMessages = [];
+            foreach ($messages as $message) {
+                if ($message['role'] === 'system') {
+                    $prismMessages[] = new SystemMessage($message['content']);
+                } elseif ($message['role'] === 'user') {
+                    $prismMessages[] = new UserMessage($message['content']);
+                }
             }
 
-            $data = $response->json();
-            
-            return [
-                'content' => $data['choices'][0]['message']['content'] ?? '',
-                'usage' => $data['usage'] ?? [],
-                'model' => $data['model'] ?? $model,
-            ];
+            $response = Prism::text()
+                ->using($this->provider, $model)
+                ->usingTemperature($temperature)
+                ->withMessages($prismMessages)
+                ->generate();
 
-        } catch (\Exception $e) {
-            Log::error('OpenAI chat API request failed', [
-                'error' => $e->getMessage(),
-                'model' => $model,
-                'messages_count' => count($messages),
-            ]);
-            
-            throw new \Exception('AI chat service unavailable: ' . $e->getMessage());
+            return [
+                'content' => trim($response->text),
+                'usage' => [
+                    'prompt_tokens' => $response->usage->promptTokens ?? 0,
+                    'completion_tokens' => $response->usage->completionTokens ?? 0,
+                    'total_tokens' => $response->usage->totalTokens ?? 0,
+                ],
+            ];
+        } catch (PrismException $e) {
+            Log::error('Prism API error: '.$e->getMessage());
+            throw new \Exception('AI service temporarily unavailable. Please try again later.');
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in AI service: '.$e->getMessage());
+            throw new \Exception('An unexpected error occurred. Please try again later.');
         }
     }
 
     public function analyzeResume(string $resumeText): array
     {
-        $cacheKey = 'resume_analysis_' . md5($resumeText);
-        
+        $cacheKey = 'resume_analysis_'.md5($resumeText);
+
         return Cache::remember($cacheKey, 3600, function () use ($resumeText) {
             $prompt = "Analyze this resume and extract key information in JSON format:
 
@@ -136,25 +144,22 @@ Return JSON with:
 }";
 
             try {
-                $response = $this->generateResponse($prompt, [
-                    'temperature' => 0.3,
-                    'max_tokens' => 1500,
-                ]);
-                
+                $response = $this->generateResponse($prompt, 'You are an expert resume analyzer. Provide detailed, actionable feedback in valid JSON format.');
+
                 $analysis = json_decode($response, true);
-                
+
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new \Exception('Invalid JSON response');
                 }
-                
+
                 return $analysis;
-                
+
             } catch (\Exception $e) {
                 Log::warning('Resume analysis failed', [
                     'error' => $e->getMessage(),
                     'resume_length' => strlen($resumeText),
                 ]);
-                
+
                 return [
                     'skills' => [],
                     'experience_years' => 0,
@@ -191,25 +196,22 @@ Generate 5-8 relevant interview questions. Return as JSON array:
 ]";
 
         try {
-            $response = $this->generateResponse($prompt, [
-                'temperature' => 0.7,
-                'max_tokens' => 1200,
-            ]);
-            
+            $response = $this->generateResponse($prompt, 'You are an expert interviewer. Generate relevant, insightful questions in valid JSON format.');
+
             $questions = json_decode($response, true);
-            
+
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response');
             }
-            
+
             return $questions ?? [];
-            
+
         } catch (\Exception $e) {
             Log::warning('Question generation failed', [
                 'error' => $e->getMessage(),
                 'question_type' => $questionType,
             ]);
-            
+
             return $this->getFallbackQuestions($questionType);
         }
     }
@@ -219,8 +221,8 @@ Generate 5-8 relevant interview questions. Return as JSON array:
         string $answer,
         array $context = []
     ): array {
-        $contextStr = !empty($context) ? json_encode($context) : '';
-        
+        $contextStr = ! empty($context) ? json_encode($context) : '';
+
         $prompt = "Evaluate this interview answer:
 
 Question: {$question}
@@ -238,26 +240,23 @@ Provide evaluation in JSON format:
 }";
 
         try {
-            $response = $this->generateResponse($prompt, [
-                'temperature' => 0.3,
-                'max_tokens' => 800,
-            ]);
-            
+            $response = $this->generateResponse($prompt, 'You are an expert interview evaluator. Provide constructive, detailed feedback in valid JSON format.');
+
             $evaluation = json_decode($response, true);
-            
+
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response');
             }
-            
+
             return $evaluation;
-            
+
         } catch (\Exception $e) {
             Log::warning('Answer evaluation failed', [
                 'error' => $e->getMessage(),
                 'question_length' => strlen($question),
                 'answer_length' => strlen($answer),
             ]);
-            
+
             return [
                 'score' => 7,
                 'strengths' => ['Clear communication'],
@@ -274,8 +273,8 @@ Provide evaluation in JSON format:
         string $userProfile,
         array $jobContext = []
     ): array {
-        $contextStr = !empty($jobContext) ? json_encode($jobContext) : '';
-        
+        $contextStr = ! empty($jobContext) ? json_encode($jobContext) : '';
+
         $prompt = "Create a comprehensive cheat sheet for the interview topic: {$topic}
 
 User Profile: {$userProfile}
@@ -295,25 +294,22 @@ Generate a cheat sheet in JSON format:
 }";
 
         try {
-            $response = $this->generateResponse($prompt, [
-                'temperature' => 0.6,
-                'max_tokens' => 1500,
-            ]);
-            
+            $response = $this->generateResponse($prompt, 'You are an expert career coach. Create comprehensive, actionable interview guidance in valid JSON format.');
+
             $cheatSheet = json_decode($response, true);
-            
+
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response');
             }
-            
+
             return $cheatSheet;
-            
+
         } catch (\Exception $e) {
             Log::warning('Cheat sheet generation failed', [
                 'error' => $e->getMessage(),
                 'topic' => $topic,
             ]);
-            
+
             return $this->getFallbackCheatSheet($topic);
         }
     }
@@ -326,25 +322,25 @@ Generate a cheat sheet in JSON format:
                     'question' => 'Tell me about a time when you faced a challenging situation at work.',
                     'category' => 'behavioral',
                     'difficulty' => 'medium',
-                    'expected_answer_points' => ['Situation description', 'Actions taken', 'Results achieved']
+                    'expected_answer_points' => ['Situation description', 'Actions taken', 'Results achieved'],
                 ],
                 [
                     'question' => 'Describe a time when you had to work with a difficult team member.',
                     'category' => 'behavioral',
                     'difficulty' => 'medium',
-                    'expected_answer_points' => ['Conflict description', 'Resolution approach', 'Outcome']
-                ]
+                    'expected_answer_points' => ['Conflict description', 'Resolution approach', 'Outcome'],
+                ],
             ],
             'technical' => [
                 [
                     'question' => 'Explain your approach to solving complex technical problems.',
                     'category' => 'technical',
                     'difficulty' => 'medium',
-                    'expected_answer_points' => ['Problem analysis', 'Solution methodology', 'Implementation']
-                ]
-            ]
+                    'expected_answer_points' => ['Problem analysis', 'Solution methodology', 'Implementation'],
+                ],
+            ],
         ];
-        
+
         return $fallbackQuestions[$questionType] ?? $fallbackQuestions['behavioral'];
     }
 
@@ -354,33 +350,33 @@ Generate a cheat sheet in JSON format:
             'key_points' => [
                 'Prepare specific examples',
                 'Use the STAR method',
-                'Practice your delivery'
+                'Practice your delivery',
             ],
             'suggested_response_framework' => 'STAR method: Situation, Task, Action, Result',
             'examples' => [
                 [
                     'scenario' => 'General interview question',
-                    'response' => 'Use specific examples from your experience'
-                ]
+                    'response' => 'Use specific examples from your experience',
+                ],
             ],
             'dos' => [
                 'Be specific and concrete',
                 'Show measurable results',
-                'Stay positive'
+                'Stay positive',
             ],
             'donts' => [
                 'Don\'t be vague',
                 'Don\'t speak negatively about past employers',
-                'Don\'t make up examples'
+                'Don\'t make up examples',
             ],
             'follow_up_questions' => [
                 'Can you provide another example?',
-                'How would you handle this differently now?'
+                'How would you handle this differently now?',
             ],
             'practice_scenarios' => [
                 'Practice with a friend',
-                'Record yourself answering'
-            ]
+                'Record yourself answering',
+            ],
         ];
     }
 }

@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -120,6 +121,16 @@ class User extends Authenticatable
         return $this->hasMany(MasteryTopic::class);
     }
 
+    public function masteryScores(): HasMany
+    {
+        return $this->hasMany(MasteryScore::class);
+    }
+
+    public function topicProgress(): HasMany
+    {
+        return $this->hasMany(TopicProgress::class);
+    }
+
     public function userDocuments(): HasMany
     {
         return $this->hasMany(UserDocument::class);
@@ -134,39 +145,58 @@ class User extends Authenticatable
     public function getPrimaryResumeAttribute()
     {
         return $this->userDocuments()
-                   ->where('document_type', 'resume')
-                   ->where('is_primary', true)
-                   ->first();
+            ->where('document_type', 'resume')
+            ->where('is_primary', true)
+            ->first();
     }
 
     public function getProfilePhotoUrlAttribute(): ?string
     {
-        return $this->profile_photo_path ? 
-            asset('storage/' . $this->profile_photo_path) : null;
+        return $this->profile_photo_path ?
+            asset('storage/'.$this->profile_photo_path) : null;
     }
 
     public function updateProfileCompletion(): void
     {
         $fields = [
             'name', 'email', 'phone', 'location', 'bio', 'current_title',
-            'current_company', 'years_experience', 'target_roles', 'skills'
+            'current_company', 'years_experience', 'target_roles', 'skills',
         ];
-        
+
         $completed = 0;
         foreach ($fields as $field) {
-            if (!empty($this->$field)) {
+            if (! empty($this->$field)) {
                 $completed++;
             }
         }
-        
+
         $percentage = round(($completed / count($fields)) * 100);
         $this->update(['profile_completion_percentage' => $percentage]);
     }
 
     public function needsOnboarding(): bool
     {
-        return !$this->onboarding_completed;
+        return ! $this->onboarding_completed;
     }
 
+    public function getOverallMasteryScore(): float
+    {
+        // Try to get average from mastery scores first
+        $masteryScoreAvg = $this->masteryScores()->avg('score');
 
+        if ($masteryScoreAvg !== null) {
+            return round($masteryScoreAvg, 2);
+        }
+
+        // Fallback to mastery topics average if no mastery scores
+        $masteryTopicAvg = $this->masteryTopics()->avg('mastery_level');
+
+        if ($masteryTopicAvg !== null) {
+            // Convert mastery level (1-5 scale) to percentage (0-100 scale)
+            return round(($masteryTopicAvg / 5) * 100, 2);
+        }
+
+        // Return 0 if no mastery data exists
+        return 0.0;
+    }
 }

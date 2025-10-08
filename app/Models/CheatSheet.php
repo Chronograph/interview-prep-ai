@@ -12,6 +12,7 @@ class CheatSheet extends Model
 
     protected $fillable = [
         'user_id',
+        'job_posting_id',
         'title',
         'category',
         'topic_description',
@@ -25,6 +26,7 @@ class CheatSheet extends Model
         'average_score',
         'last_practiced_at',
         'is_custom',
+        'interview_date',
     ];
 
     protected $casts = [
@@ -36,11 +38,17 @@ class CheatSheet extends Model
         'average_score' => 'decimal:2',
         'last_practiced_at' => 'datetime',
         'is_custom' => 'boolean',
+        'interview_date' => 'date',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function jobPosting(): BelongsTo
+    {
+        return $this->belongsTo(JobPosting::class);
     }
 
     public function incrementUsage(): void
@@ -73,20 +81,31 @@ class CheatSheet extends Model
     {
         return $query->where(function ($q) {
             $q->where('average_score', '<', 3.0)
-              ->orWhere('usage_count', '<', 3)
-              ->orWhereNull('last_practiced_at')
-              ->orWhere('last_practiced_at', '<', now()->subWeeks(2));
+                ->orWhere('usage_count', '<', 3)
+                ->orWhereNull('last_practiced_at')
+                ->orWhere('last_practiced_at', '<', now()->subWeeks(2));
         });
     }
 
     public function getCategoryDisplayAttribute(): string
     {
-        return match($this->category) {
+        return match ($this->category) {
             'behavioral' => 'Behavioral Questions',
             'technical' => 'Technical Questions',
             'company_specific' => 'Company-Specific',
             'general' => 'General Interview',
             default => ucfirst($this->category)
         };
+    }
+
+    public static function getCategories(): array
+    {
+        return [
+            'behavioral' => 'Behavioral Questions',
+            'technical' => 'Technical Questions',
+            'company_specific' => 'Company-Specific',
+            'general' => 'General Interview',
+            'custom' => 'Custom',
+        ];
     }
 }

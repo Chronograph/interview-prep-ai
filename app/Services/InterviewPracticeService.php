@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\InterviewSession;
 use App\Models\AiPersona;
-use App\Models\User;
+use App\Models\InterviewSession;
 use App\Models\JobPosting;
-use App\Models\CheatSheet;
 use App\Models\MasteryTopic;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -25,12 +24,12 @@ class InterviewPracticeService
         array $config = []
     ): InterviewSession {
         // Get or create default persona if none provided
-        if (!$persona) {
+        if (! $persona) {
             $persona = AiPersona::where('is_default', true)
                 ->where('is_active', true)
                 ->first();
-                
-            if (!$persona) {
+
+            if (! $persona) {
                 $persona = AiPersona::where('is_active', true)->first();
             }
         }
@@ -39,6 +38,7 @@ class InterviewPracticeService
         $session = InterviewSession::create([
             'user_id' => $user->id,
             'job_posting_id' => $jobPosting?->id,
+            'ai_persona_id' => $persona?->id,
             'session_type' => $sessionType,
             'focus_area' => $config['focus_area'] ?? 'general',
             'difficulty_level' => $config['difficulty'] ?? 'medium',
@@ -64,33 +64,30 @@ class InterviewPracticeService
         try {
             $persona = AiPersona::find($session->ai_personas_used[0]);
             $context = $this->buildQuestionContext($session);
-            
+
             $prompt = $this->buildQuestionPrompt($session, $persona, $context);
-            
-            $response = $this->aiService->generateResponse($prompt, [
-                'temperature' => 0.7,
-                'max_tokens' => 300,
-            ]);
+
+            $response = $this->aiService->generateResponse($prompt);
 
             $question = $this->parseQuestionResponse($response);
-            
+
             // Add to session questions
             $questions = $session->questions_asked ?? [];
             $questions[] = array_merge($question, [
                 'asked_at' => now()->toISOString(),
                 'question_id' => Str::uuid(),
             ]);
-            
+
             $session->update(['questions_asked' => $questions]);
-            
+
             return $question;
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate question', [
                 'session_id' => $session->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return null;
         }
     }
@@ -104,41 +101,41 @@ class InterviewPracticeService
         try {
             // Find the question
             $questions = $session->questions_asked ?? [];
-            $questionIndex = collect($questions)->search(fn($q) => $q['question_id'] === $questionId);
-            
+            $questionIndex = collect($questions)->search(fn ($q) => $q['question_id'] === $questionId);
+
             if ($questionIndex === false) {
                 throw new \Exception('Question not found');
             }
 
             $question = $questions[$questionIndex];
-            
+
             // Generate AI feedback
             $feedback = $this->generateAnswerFeedback($session, $question, $answer);
-            
+
             // Update question with answer and feedback
             $questions[$questionIndex]['answer'] = $answer;
             $questions[$questionIndex]['answered_at'] = now()->toISOString();
             $questions[$questionIndex]['feedback'] = $feedback;
             $questions[$questionIndex]['audio_data'] = $audioData;
-            
+
             // Update session
             $session->update([
                 'questions_asked' => $questions,
                 'total_questions' => count($questions),
             ]);
-            
+
             // Update mastery topics based on performance
             $this->updateMasteryFromAnswer($session->user, $question, $feedback);
-            
+
             return $feedback;
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to process answer', [
                 'session_id' => $session->id,
                 'question_id' => $questionId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             throw $e;
         }
     }
@@ -148,10 +145,10 @@ class InterviewPracticeService
         try {
             // Generate overall session feedback
             $overallFeedback = $this->generateSessionFeedback($session);
-            
+
             // Calculate final scores
             $scores = $this->calculateSessionScores($session);
-            
+
             // Update session
             $session->update([
                 'status' => 'completed',
@@ -160,22 +157,22 @@ class InterviewPracticeService
                 'performance_scores' => $scores,
                 'session_duration_minutes' => $session->started_at->diffInMinutes(now()),
             ]);
-            
+
             // Update user mastery topics
             $this->updateUserMasteryFromSession($session);
-            
+
             return [
                 'session' => $session->fresh(),
                 'feedback' => $overallFeedback,
                 'scores' => $scores,
             ];
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to end session', [
                 'session_id' => $session->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             $session->update(['status' => 'error']);
             throw $e;
         }
@@ -188,9 +185,9 @@ class InterviewPracticeService
     ): void {
         // Generate 2-3 opening questions based on session type and persona
         $context = $this->buildQuestionContext($session);
-        
-        $prompt = "Generate 2-3 opening interview questions for a {$session->session_type} interview. 
-        
+
+        $prompt = "Generate 2-3 opening interview questions for a {$session->session_type} interview.
+
 Context: {$context}
 Persona: {$persona->name} - {$persona->personality_description}
 Focus: {$session->focus_area}
@@ -199,26 +196,23 @@ Difficulty: {$session->difficulty_level}
 Return as JSON array with format: [{\"question\": \"...\", \"category\": \"...\", \"expected_duration_minutes\": 3}]";
 
         try {
-            $response = $this->aiService->generateResponse($prompt, [
-                'temperature' => 0.7,
-                'max_tokens' => 500,
-            ]);
-            
+            $response = $this->aiService->generateResponse($prompt);
+
             $questions = json_decode($response, true) ?? [];
-            
+
             $questionsWithIds = collect($questions)->map(function ($question) {
                 return array_merge($question, [
                     'question_id' => Str::uuid(),
                     'asked_at' => now()->toISOString(),
                 ]);
             })->toArray();
-            
+
             $session->update(['questions_asked' => $questionsWithIds]);
-            
+
         } catch (\Exception $e) {
             Log::warning('Failed to generate initial questions', [
                 'session_id' => $session->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -226,28 +220,28 @@ Return as JSON array with format: [{\"question\": \"...\", \"category\": \"...\"
     private function buildQuestionContext(InterviewSession $session): string
     {
         $context = [];
-        
+
         if ($session->jobPosting) {
             $context[] = "Job: {$session->jobPosting->title} at {$session->jobPosting->company_name}";
-            $context[] = "Requirements: " . implode(', ', $session->jobPosting->requirements ?? []);
+            $context[] = 'Requirements: '.implode(', ', $session->jobPosting->requirements ?? []);
         }
-        
+
         if ($session->user->current_title) {
             $context[] = "Candidate: {$session->user->current_title}";
         }
-        
+
         if ($session->user->years_experience) {
             $context[] = "Experience: {$session->user->years_experience} years";
         }
-        
+
         $answeredQuestions = collect($session->questions_asked ?? [])
             ->where('answer')
             ->count();
-            
+
         if ($answeredQuestions > 0) {
             $context[] = "Questions answered so far: {$answeredQuestions}";
         }
-        
+
         return implode('. ', $context);
     }
 
@@ -256,18 +250,18 @@ Return as JSON array with format: [{\"question\": \"...\", \"category\": \"...\"
         AiPersona $persona,
         string $context
     ): string {
-        $systemPrompt = $persona->generateSystemPrompt($context);
-        
+        $systemPrompt = $persona->getSystemPrompt(['context' => $context]);
+
         $previousQuestions = collect($session->questions_asked ?? [])
             ->pluck('question')
             ->implode(', ');
-            
+
         return "{$systemPrompt}
 
 Context: {$context}
 Previous questions asked: {$previousQuestions}
 
-Generate the next interview question. Avoid repeating previous questions. 
+Generate the next interview question. Avoid repeating previous questions.
 Return as JSON: {\"question\": \"...\", \"category\": \"...\", \"expected_duration_minutes\": 3}";
     }
 
@@ -275,7 +269,7 @@ Return as JSON: {\"question\": \"...\", \"category\": \"...\", \"expected_durati
     {
         try {
             $data = json_decode($response, true);
-            
+
             return [
                 'question' => $data['question'] ?? 'Tell me about yourself.',
                 'category' => $data['category'] ?? 'general',
@@ -311,11 +305,8 @@ Provide feedback in JSON format:
 }";
 
         try {
-            $response = $this->aiService->generateResponse($prompt, [
-                'temperature' => 0.3,
-                'max_tokens' => 400,
-            ]);
-            
+            $response = $this->aiService->generateResponse($prompt);
+
             return json_decode($response, true) ?? $this->getDefaultFeedback();
         } catch (\Exception $e) {
             return $this->getDefaultFeedback();
@@ -337,7 +328,7 @@ Provide feedback in JSON format:
     {
         $questions = $session->questions_asked ?? [];
         $answeredQuestions = collect($questions)->where('feedback')->all();
-        
+
         if (empty($answeredQuestions)) {
             return [
                 'overall_score' => 0,
@@ -347,10 +338,10 @@ Provide feedback in JSON format:
                 'confidence_score' => 0,
             ];
         }
-        
+
         $scores = collect($answeredQuestions)->pluck('feedback.score')->filter();
         $avgScore = $scores->avg() ?? 0;
-        
+
         return [
             'overall_score' => round($avgScore, 1),
             'communication_score' => round($avgScore * 0.9 + rand(-5, 5) / 10, 1),
@@ -364,10 +355,10 @@ Provide feedback in JSON format:
     {
         $questions = $session->questions_asked ?? [];
         $scores = $this->calculateSessionScores($session);
-        
-        $prompt = "Generate overall interview session feedback based on:
 
-Total Questions: " . count($questions) . "
+        $prompt = 'Generate overall interview session feedback based on:
+
+Total Questions: '.count($questions)."
 Average Score: {$scores['overall_score']}
 Session Type: {$session->session_type}
 Focus Area: {$session->focus_area}
@@ -382,11 +373,8 @@ Provide comprehensive feedback in JSON format:
 }";
 
         try {
-            $response = $this->aiService->generateResponse($prompt, [
-                'temperature' => 0.4,
-                'max_tokens' => 500,
-            ]);
-            
+            $response = $this->aiService->generateResponse($prompt);
+
             return json_decode($response, true) ?? $this->getDefaultSessionFeedback();
         } catch (\Exception $e) {
             return $this->getDefaultSessionFeedback();
@@ -416,13 +404,13 @@ Provide comprehensive feedback in JSON format:
                 'total_attempts' => 0,
                 'recent_scores' => [],
             ]);
-            
+
             $topic->addScore($feedback['score'] ?? 7);
         } catch (\Exception $e) {
             Log::warning('Failed to update mastery from answer', [
                 'user_id' => $user->id,
                 'question_category' => $question['category'] ?? 'unknown',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -432,7 +420,7 @@ Provide comprehensive feedback in JSON format:
         try {
             $scores = $session->performance_scores ?? [];
             $overallScore = $scores['overall_score'] ?? 7;
-            
+
             // Update general interview mastery
             $masteryTopic = MasteryTopic::firstOrCreate([
                 'user_id' => $session->user_id,
@@ -443,12 +431,12 @@ Provide comprehensive feedback in JSON format:
                 'total_attempts' => 0,
                 'recent_scores' => [],
             ]);
-            
+
             $masteryTopic->addScore($overallScore);
         } catch (\Exception $e) {
             Log::warning('Failed to update user mastery from session', [
                 'session_id' => $session->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

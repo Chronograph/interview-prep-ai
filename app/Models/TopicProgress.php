@@ -38,16 +38,16 @@ class TopicProgress extends Model
     public function recordAttempt(bool $isCorrect, float $score, int $timeSpent): void
     {
         $this->increment('questions_attempted');
-        
+
         if ($isCorrect) {
             $this->increment('questions_correct');
         }
 
         $this->increment('time_spent_minutes', $timeSpent);
-        
+
         // Recalculate average score
         $newAverage = (($this->average_score * ($this->questions_attempted - 1)) + $score) / $this->questions_attempted;
-        
+
         $this->update([
             'average_score' => $newAverage,
             'completion_percentage' => $this->calculateCompletionPercentage(),
@@ -57,23 +57,24 @@ class TopicProgress extends Model
 
     public function getAccuracyPercentage(): float
     {
-        return $this->questions_attempted > 0 
-            ? ($this->questions_correct / $this->questions_attempted) * 100 
+        return $this->questions_attempted > 0
+            ? ($this->questions_correct / $this->questions_attempted) * 100
             : 0;
     }
 
-    private function calculateCompletionPercentage(): float
+    public function calculateCompletionPercentage(): float
     {
         // This could be based on various factors like questions attempted,
         // time spent, accuracy, etc. For now, simple calculation based on attempts
         $maxQuestions = 50; // Configurable per topic
+
         return min(($this->questions_attempted / $maxQuestions) * 100, 100);
     }
 
     public function addStrength(string $strength): void
     {
         $strengths = $this->strengths ?? [];
-        if (!in_array($strength, $strengths)) {
+        if (! in_array($strength, $strengths)) {
             $strengths[] = $strength;
             $this->update(['strengths' => $strengths]);
         }
@@ -82,7 +83,7 @@ class TopicProgress extends Model
     public function addWeakness(string $weakness): void
     {
         $weaknesses = $this->weaknesses ?? [];
-        if (!in_array($weakness, $weaknesses)) {
+        if (! in_array($weakness, $weaknesses)) {
             $weaknesses[] = $weakness;
             $this->update(['weaknesses' => $weaknesses]);
         }

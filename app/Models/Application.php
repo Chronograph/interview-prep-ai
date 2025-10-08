@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class Application extends Model
 {
     protected $fillable = [
         'user_id',
+        'resume_id',
         'company_name',
         'position_title',
         'job_url',
         'status',
+        'got_response',
         'priority',
         'application_date',
         'expected_response_date',
@@ -37,11 +39,17 @@ class Application extends Model
         'contacts' => 'array',
         'requirements' => 'array',
         'is_favorite' => 'boolean',
+        'got_response' => 'boolean',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function resume(): BelongsTo
+    {
+        return $this->belongsTo(Resume::class);
     }
 
     public function updateStatus(string $newStatus): void
@@ -59,7 +67,7 @@ class Application extends Model
         ]);
     }
 
-    public function addContact(string $name, string $email, string $role = null): void
+    public function addContact(string $name, string $email, ?string $role = null): void
     {
         $contacts = $this->contacts ?? [];
         $contacts[] = [
@@ -74,7 +82,7 @@ class Application extends Model
 
     public function getDaysUntilResponse(): ?int
     {
-        if (!$this->expected_response_date) {
+        if (! $this->expected_response_date) {
             return null;
         }
 
@@ -83,7 +91,7 @@ class Application extends Model
 
     public function isOverdue(): bool
     {
-        if (!$this->expected_response_date) {
+        if (! $this->expected_response_date) {
             return false;
         }
 
@@ -92,17 +100,17 @@ class Application extends Model
 
     public function getSalaryRange(): ?string
     {
-        if (!$this->salary_min && !$this->salary_max) {
+        if (! $this->salary_min && ! $this->salary_max) {
             return null;
         }
 
         if ($this->salary_min && $this->salary_max) {
-            return '$' . number_format($this->salary_min) . ' - $' . number_format($this->salary_max);
+            return '$'.number_format($this->salary_min).' - $'.number_format($this->salary_max);
         }
 
-        return $this->salary_min 
-            ? '$' . number_format($this->salary_min) . '+'
-            : 'Up to $' . number_format($this->salary_max);
+        return $this->salary_min
+            ? '$'.number_format($this->salary_min).'+'
+            : 'Up to $'.number_format($this->salary_max);
     }
 
     public function scopeActive($query)

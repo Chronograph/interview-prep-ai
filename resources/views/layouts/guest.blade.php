@@ -12,7 +12,7 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/css/auth-branding.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 <body class="font-sans text-gray-900 antialiased">
@@ -23,16 +23,16 @@
     
     <div class="relative min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
         <!-- Logo Section -->
-        <div class="auth-container">
+        <div class="animate-fade-in-up">
             <a href="/" class="group">
-                <div class="flex items-center justify-center w-20 h-20 mx-auto mb-8 bg-white dark:bg-gray-800 rounded-full shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
+                <div class="flex items-center justify-center w-20 h-20 mx-auto mb-8 bg-white dark:bg-gray-800 rounded-full shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105 animate-pulse">
                     <x-application-logo class="w-12 h-12 fill-current text-orange-600 dark:text-orange-400" />
                 </div>
             </a>
         </div>
 
         <!-- Main Content Card -->
-        <div class="auth-container w-full sm:max-w-md mt-6 px-8 py-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-2xl overflow-hidden sm:rounded-2xl border border-white/20 dark:border-gray-700/50">
+        <div class="animate-fade-in-up w-full sm:max-w-md mt-6 px-8 py-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-2xl overflow-hidden sm:rounded-2xl border border-white/20 dark:border-gray-700/50">
             {{ $slot }}
         </div>
         

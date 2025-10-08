@@ -2,142 +2,176 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Forms\ResumeForm;
 use App\Models\Resume;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use WireUi\Traits\WireUiActions;
 
+#[Layout('layouts.app')]
+#[Title('Resume Manager')]
 class ResumeManager extends Component
 {
-    use WithFileUploads;
+    use WireUiActions, WithFileUploads;
+
+    public ResumeForm $form;
 
     public $resumes;
-    public $showCreateModal = false;
-    public $showEditModal = false;
-    public $editingResume = null;
+
+    // Statistics
+    public $totalResumes = 0;
+
+    public $avgOptimization = 76;
+
+    public $companiesTargeted = 6;
+
     public $isUploading = false;
+
     public $uploadProgress = 0;
 
-    // Form properties
-    public $title = '';
-    public $summary = '';
-    public $skills = '';
-    public $experience = '';
-    public $education = '';
-    public $certifications = '';
-    public $file;
+    public $selectedResumeVersions = [];
 
-    protected $rules = [
-        'title' => 'required|string|max:255',
-        'summary' => 'nullable|string',
-        'skills' => 'nullable|string',
-        'experience' => 'nullable|string',
-        'education' => 'nullable|string',
-        'certifications' => 'nullable|string',
-        'file' => 'nullable|file|mimes:pdf,doc,docx,txt|max:10240'
-    ];
-
-    public function mount($resumes = [])
+    public function mount()
     {
-        $this->resumes = $resumes;
+        $this->refreshResumes();
+        $this->calculateStatistics();
+    }
+
+    public function switchResumeVersion($groupId, $resumeId)
+    {
+        $this->selectedResumeVersions[$groupId] = $resumeId;
+    }
+
+    public function getGroupedResumes()
+    {
+        $allResumes = Resume::where('user_id', Auth::id())->get();
+
+        // Get base resumes (those without a parent)
+        $baseResumes = $allResumes->whereNull('parent_resume_id');
+
+        $grouped = [];
+        foreach ($baseResumes as $base) {
+            $groupId = $base->id;
+
+            // Get all versions for this base resume
+            $versions = $allResumes->where('parent_resume_id', $base->id)
+                ->push($base)
+                ->sortByDesc('version')
+                ->values();
+
+            // Set the selected version if not already set
+            if (! isset($this->selectedResumeVersions[$groupId])) {
+                $this->selectedResumeVersions[$groupId] = $versions->first()->id;
+            }
+
+            $grouped[] = [
+                'group_id' => $groupId,
+                'versions' => $versions,
+                'selected_version_id' => $this->selectedResumeVersions[$groupId],
+                'selected_resume' => $versions->firstWhere('id', $this->selectedResumeVersions[$groupId]),
+            ];
+        }
+
+        return collect($grouped);
     }
 
     public function openCreateModal()
     {
-        $this->resetForm();
-        $this->showCreateModal = true;
-    }
-
-    public function closeCreateModal()
-    {
-        $this->showCreateModal = false;
-        $this->resetForm();
+        $this->form->reset();
+        $this->js('$openModal("createResumeModal")');
     }
 
     public function openEditModal($resumeId)
     {
         $resume = Resume::find($resumeId);
         if ($resume && $resume->user_id === Auth::id()) {
-            $this->editingResume = $resume;
-            $this->title = $resume->title;
-            $this->summary = $resume->summary;
-            $this->skills = $resume->skills;
-            $this->experience = $resume->experience;
-            $this->education = $resume->education;
-            $this->certifications = $resume->certifications;
-            $this->showEditModal = true;
+            $this->form->setResume($resume);
+            $this->js('$openModal("editResumeModal")');
         }
-    }
-
-    public function closeEditModal()
-    {
-        $this->showEditModal = false;
-        $this->resetForm();
-        $this->editingResume = null;
     }
 
     public function createResume()
     {
-        $this->validate();
-
         $filePath = null;
-        if ($this->file) {
-            $filePath = $this->file->store('resumes', 'public');
+        $fileSize = null;
+
+        if ($this->form->file) {
+            $filePath = $this->form->file->store('resumes', 'public');
+            // Get file size in KB
+            $fileSize = round($this->form->file->getSize() / 1024);
         }
 
-        Resume::create([
-            'user_id' => Auth::id(),
-            'title' => $this->title,
-            'summary' => $this->summary,
-            'skills' => $this->skills,
-            'experience' => $this->experience,
-            'education' => $this->education,
-            'certifications' => $this->certifications,
-            'file_path' => $filePath,
-            'is_primary' => count($this->resumes) === 0
-        ]);
+        $this->form->store($filePath, $fileSize);
 
         $this->refreshResumes();
-        $this->closeCreateModal();
+        $this->calculateStatistics();
+        $this->js('$closeModal("createResumeModal")');
         $this->dispatch('resume-created');
-        session()->flash('message', 'Resume created successfully!');
+
+        $this->notification()->success(
+            'Resume Created!',
+            'Your resume has been created successfully.'
+        );
     }
 
     public function updateResume()
     {
-        $this->validate();
+        $filePath = null;
+        $fileSize = null;
 
-        if (!$this->editingResume) return;
-
-        $filePath = $this->editingResume->file_path;
-        if ($this->file) {
-            $filePath = $this->file->store('resumes', 'public');
+        if ($this->form->file) {
+            $filePath = $this->form->file->store('resumes', 'public');
+            // Get file size in KB
+            $fileSize = round($this->form->file->getSize() / 1024);
         }
 
-        $this->editingResume->update([
-            'title' => $this->title,
-            'summary' => $this->summary,
-            'skills' => $this->skills,
-            'experience' => $this->experience,
-            'education' => $this->education,
-            'certifications' => $this->certifications,
-            'file_path' => $filePath
-        ]);
+        $this->form->update($filePath, $fileSize);
 
         $this->refreshResumes();
-        $this->closeEditModal();
+        $this->calculateStatistics();
+        $this->js('$closeModal("editResumeModal")');
         $this->dispatch('resume-updated');
-        session()->flash('message', 'Resume updated successfully!');
+
+        $this->notification()->success(
+            'Resume Updated!',
+            'Your resume has been updated successfully.'
+        );
+    }
+
+    public function createVersion($resumeId)
+    {
+        $resume = Resume::find($resumeId);
+        if ($resume && $resume->user_id === Auth::id()) {
+            $newVersion = $resume->createVersion();
+            $newVersion->updateOptimizationScore();
+            $this->refreshResumes();
+            $this->calculateStatistics();
+            $this->dispatch('version-created');
+
+            $this->notification()->success(
+                'Version Created!',
+                'New resume version (v'.$newVersion->version.') created successfully.'
+            );
+        }
     }
 
     public function deleteResume($resumeId)
     {
         $resume = Resume::find($resumeId);
         if ($resume && $resume->user_id === Auth::id()) {
+            $resumeTitle = $resume->title;
             $resume->delete();
             $this->refreshResumes();
+            $this->calculateStatistics();
             $this->dispatch('resume-deleted');
-            session()->flash('message', 'Resume deleted successfully!');
+
+            $this->notification()->success(
+                'Resume Deleted!',
+                '"'.$resumeTitle.'" has been deleted successfully.'
+            );
         }
     }
 
@@ -145,14 +179,18 @@ class ResumeManager extends Component
     {
         // Reset all resumes to not primary
         Resume::where('user_id', Auth::id())->update(['is_primary' => false]);
-        
+
         // Set selected resume as primary
         $resume = Resume::find($resumeId);
         if ($resume && $resume->user_id === Auth::id()) {
             $resume->update(['is_primary' => true]);
             $this->refreshResumes();
             $this->dispatch('primary-changed');
-            session()->flash('message', 'Primary resume updated!');
+
+            $this->notification()->success(
+                'Primary Resume Updated!',
+                '"'.$resume->title.'" is now your primary resume.'
+            );
         }
     }
 
@@ -165,20 +203,46 @@ class ResumeManager extends Component
         $this->isUploading = false;
     }
 
-    private function resetForm()
-    {
-        $this->title = '';
-        $this->summary = '';
-        $this->skills = '';
-        $this->experience = '';
-        $this->education = '';
-        $this->certifications = '';
-        $this->file = null;
-    }
-
     private function refreshResumes()
     {
-        $this->resumes = Resume::where('user_id', Auth::id())->get()->toArray();
+        $this->resumes = Resume::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    private function calculateStatistics()
+    {
+        $this->totalResumes = $this->resumes->count();
+
+        // Calculate average optimization based on resume completeness
+        $totalOptimization = 0;
+        foreach ($this->resumes as $resume) {
+            $score = 0;
+            if ($resume->title) {
+                $score += 20;
+            }
+            if ($resume->summary) {
+                $score += 20;
+            }
+            if ($resume->skills) {
+                $score += 20;
+            }
+            if ($resume->experience) {
+                $score += 20;
+            }
+            if ($resume->education) {
+                $score += 10;
+            }
+            if ($resume->certifications) {
+                $score += 10;
+            }
+            $totalOptimization += $score;
+        }
+
+        $this->avgOptimization = $this->totalResumes > 0 ? round($totalOptimization / $this->totalResumes) : 0;
+
+        // Calculate unique companies targeted (placeholder - would need job applications data)
+        $this->companiesTargeted = min(6, $this->totalResumes * 2); // Placeholder calculation
     }
 
     public function render()

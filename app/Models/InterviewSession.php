@@ -15,11 +15,13 @@ class InterviewSession extends Model
         'user_id',
         'interview_id',
         'job_posting_id',
+        'ai_persona_id',
         'session_type',
         'focus_area',
         'difficulty_level',
         'is_panel_interview',
         'ai_personas_used',
+        'session_config',
         'planned_duration_minutes',
         'actual_duration_minutes',
         'questions_planned',
@@ -52,6 +54,7 @@ class InterviewSession extends Model
 
     protected $casts = [
         'ai_personas_used' => 'array',
+        'session_config' => 'array',
         'media_metadata' => 'array',
         'overall_score' => 'decimal:2',
         'communication_score' => 'decimal:2',
@@ -85,6 +88,11 @@ class InterviewSession extends Model
         return $this->belongsTo(JobPosting::class);
     }
 
+    public function aiPersona(): BelongsTo
+    {
+        return $this->belongsTo(AiPersona::class);
+    }
+
     public function getVideoUrlAttribute(): ?string
     {
         return $this->video_path ? Storage::url($this->video_path) : null;
@@ -108,7 +116,7 @@ class InterviewSession extends Model
         $this->update([
             'status' => 'completed',
             'completed_at' => now(),
-            'actual_duration_minutes' => $this->started_at ? 
+            'actual_duration_minutes' => $this->started_at ?
                 $this->started_at->diffInMinutes(now()) : null,
         ]);
     }
@@ -120,10 +128,10 @@ class InterviewSession extends Model
 
     public function getCompletionPercentageAttribute(): float
     {
-        if (!$this->questions_planned || $this->questions_planned === 0) {
+        if (! $this->questions_planned || $this->questions_planned === 0) {
             return 0;
         }
-        
+
         return round(($this->questions_completed / $this->questions_planned) * 100, 1);
     }
 
@@ -168,7 +176,7 @@ class InterviewSession extends Model
 
     public function getSessionTypeDisplayAttribute(): string
     {
-        return match($this->session_type) {
+        return match ($this->session_type) {
             'full_interview' => 'Full Interview',
             'topic_practice' => 'Topic Practice',
             'elevator_pitch' => 'Elevator Pitch',
@@ -181,7 +189,7 @@ class InterviewSession extends Model
 
     public function getDifficultyDisplayAttribute(): string
     {
-        return match($this->difficulty_level) {
+        return match ($this->difficulty_level) {
             'easy' => 'Easy',
             'medium' => 'Medium',
             'hard' => 'Hard',
@@ -191,7 +199,7 @@ class InterviewSession extends Model
 
     public function getStatusDisplayAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'scheduled' => 'Scheduled',
             'in_progress' => 'In Progress',
             'completed' => 'Completed',
