@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -139,6 +140,75 @@ class User extends Authenticatable
     public function interviewSessions(): HasMany
     {
         return $this->hasMany(InterviewSession::class);
+    }
+
+    public function ownedOrganizations(): HasMany
+    {
+        return $this->hasMany(Organization::class, 'owner_id');
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_members')
+            ->withPivot('role', 'joined_at')
+            ->withTimestamps();
+    }
+
+    public function ownedTeams(): HasMany
+    {
+        return $this->hasMany(Team::class, 'owner_id');
+    }
+
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'team_members')
+            ->withPivot('role', 'joined_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the user's current organization (first one they're a member of)
+     */
+    public function currentOrganization(): ?Organization
+    {
+        return $this->organizations()->first();
+    }
+
+    /**
+     * Get the user's primary organization (owned or first membership)
+     */
+    public function primaryOrganization(): ?Organization
+    {
+        try {
+            return $this->ownedOrganizations()->first() ?? $this->organizations()->first();
+        } catch (\Exception $e) {
+            logger()->error('Failed to get primary organization: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Get the user's settings
+     */
+    public function settings()
+    {
+        return $this->hasOne(UserSetting::class);
+    }
+
+    /**
+     * Get or create user settings with defaults
+     */
+    public function getSettings()
+    {
+        return $this->settings()->firstOrCreate([], [
+            'job_applications_per_week' => 5,
+            'practice_interviews_per_week' => 3,
+            'score_improvement_target' => 10,
+            'email_goal_reminders' => true,
+            'email_weekly_progress' => true,
+            'goal_reminder_frequency' => 'weekly',
+        ]);
     }
 
     // Helper methods

@@ -9,11 +9,16 @@ use App\Models\JobPosting;
 use App\Models\MasteryScore;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
+use WireUi\Traits\WireUiActions;
 
 #[Layout('layouts.app')]
+#[Title('Dashboard')]
 class Dashboard extends Component
 {
+    use WireUiActions;
+
     public $user;
 
     public $stats;
@@ -40,8 +45,6 @@ class Dashboard extends Component
     public $audioVisualSetup;
 
     public $recommendations;
-
-    public $skillProgress;
 
     public $recommendedJobs;
 
@@ -89,8 +92,6 @@ class Dashboard extends Component
         $this->audioVisualSetup = $this->loadAudioVisualSetup();
 
         $this->recommendations = $this->loadRecommendations();
-
-        $this->skillProgress = $this->loadSkillProgress();
 
         $this->recommendedJobs = $this->loadRecommendedJobs();
 
@@ -225,59 +226,6 @@ class Dashboard extends Component
         }
 
         return $recommendations->take(4);
-    }
-
-    private function loadSkillProgress()
-    {
-        $scores = MasteryScore::where('user_id', $this->user->id)
-            ->orderBy('created_at', 'asc')
-            ->get()
-            ->groupBy('skill');
-
-        $labels = [];
-        $overall = [];
-        $productThinking = [];
-        $communication = [];
-        $leadership = [];
-
-        // Generate progress data for the last 5 sessions
-        $sessionCount = 0;
-        foreach ($scores as $skill => $skillScores) {
-            $sessionCount++;
-            if ($sessionCount > 5) {
-                break;
-            }
-
-            $labels[] = "Session {$sessionCount}";
-            $overall[] = $skillScores->avg('score') ?? 5.0;
-
-            // Map skills to categories
-            if (in_array($skill, ['product_strategy', 'user_research', 'data_analysis'])) {
-                $productThinking[] = $skillScores->avg('score') ?? 5.0;
-            } elseif (in_array($skill, ['communication', 'presentation', 'storytelling'])) {
-                $communication[] = $skillScores->avg('score') ?? 5.0;
-            } elseif (in_array($skill, ['leadership', 'stakeholder_management', 'team_management'])) {
-                $leadership[] = $skillScores->avg('score') ?? 5.0;
-            }
-        }
-
-        // Fill in missing data points with default values
-        while (count($labels) < 5) {
-            $sessionNum = count($labels) + 1;
-            $labels[] = "Session {$sessionNum}";
-            $overall[] = 5.0;
-            $productThinking[] = 5.0;
-            $communication[] = 5.0;
-            $leadership[] = 5.0;
-        }
-
-        return [
-            'labels' => $labels,
-            'overall' => $overall,
-            'product_thinking' => $productThinking,
-            'communication' => $communication,
-            'leadership' => $leadership,
-        ];
     }
 
     private function loadRecommendedJobs()
@@ -460,7 +408,7 @@ class Dashboard extends Component
 
         // Calculate interview ready companies (applications with high readiness)
         $this->interviewReadyCount = Application::where('user_id', $this->user->id)
-            ->whereIn('status', ['applied', 'phone_screen', 'interview_scheduled'])
+            ->whereIn('status', ['applied', 'phone_screen', 'interview_scheduled', 'phone_interview', 'offer'])
             ->where('expected_response_date', '>=', now())
             ->count();
 
@@ -527,6 +475,126 @@ class Dashboard extends Component
         return collect($this->job_postings)
             ->filter(fn ($jobPosting) => $jobPosting && isset($jobPosting['title']))
             ->take(3);
+    }
+
+    // Practice Session Modal
+    public $showPracticeModal = false;
+
+    public function startPractice()
+    {
+        return $this->redirect(route('practice.sessions'));
+    }
+
+    public function openGoalsModal()
+    {
+        $this->dispatch('open-goals-modal');
+    }
+
+    // Goal Progress Methods
+    public function getGoalProgressProperty()
+    {
+        $settings = $this->user->getSettings();
+        $weekStart = now()->startOfWeek();
+        $weekEnd = now()->endOfWeek();
+
+        // Calculate applications this week
+        $applicationsThisWeek = Application::where('user_id', $this->user->id)
+            ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->count();
+
+        // Calculate practice sessions this week
+        $sessionsThisWeek = InterviewSession::where('user_id', $this->user->id)
+            ->where('is_practice', true)
+            ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->count();
+
+        // Calculate score improvement (compare this week vs last week)
+        $thisWeekScores = InterviewSession::where('user_id', $this->user->id)
+            ->where('is_practice', true)
+            ->whereNotNull('overall_score')
+            ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->avg('overall_score');
+
+        $lastWeekScores = InterviewSession::where('user_id', $this->user->id)
+            ->where('is_practice', true)
+            ->whereNotNull('overall_score')
+            ->whereBetween('created_at', [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()])
+            ->avg('overall_score');
+
+        $scoreImprovement = 0;
+        if ($lastWeekScores && $thisWeekScores) {
+            $scoreImprovement = round((($thisWeekScores - $lastWeekScores) / $lastWeekScores) * 100);
+        }
+
+        return [
+            'applications' => [
+                'current' => $applicationsThisWeek,
+                'target' => $settings->job_applications_per_week,
+                'percentage' => $settings->job_applications_per_week > 0 ? round(($applicationsThisWeek / $settings->job_applications_per_week) * 100) : 0,
+                'remaining' => max(0, $settings->job_applications_per_week - $applicationsThisWeek),
+            ],
+            'practice_sessions' => [
+                'current' => $sessionsThisWeek,
+                'target' => $settings->practice_interviews_per_week,
+                'percentage' => $settings->practice_interviews_per_week > 0 ? round(($sessionsThisWeek / $settings->practice_interviews_per_week) * 100) : 0,
+                'remaining' => max(0, $settings->practice_interviews_per_week - $sessionsThisWeek),
+            ],
+            'score_improvement' => [
+                'current' => $scoreImprovement,
+                'target' => $settings->score_improvement_target,
+                'achieved' => $scoreImprovement >= $settings->score_improvement_target,
+            ],
+        ];
+    }
+
+    public function getGoalRemindersProperty()
+    {
+        $progress = $this->goalProgress;
+        $reminders = [];
+
+        // Application reminders
+        if ($progress['applications']['remaining'] > 0) {
+            $reminders[] = [
+                'type' => 'applications',
+                'message' => "You need {$progress['applications']['remaining']} more job applications this week to reach your goal.",
+                'icon' => 'briefcase',
+                'color' => 'blue',
+                'action' => 'Apply to jobs',
+                'action_url' => route('analytics.applications.index'),
+            ];
+        }
+
+        // Practice session reminders
+        if ($progress['practice_sessions']['remaining'] > 0) {
+            $reminders[] = [
+                'type' => 'practice',
+                'message' => "You need {$progress['practice_sessions']['remaining']} more practice sessions this week to reach your goal.",
+                'icon' => 'video-camera',
+                'color' => 'orange',
+                'action' => 'Start practice',
+                'action_url' => route('practice.sessions'),
+            ];
+        }
+
+        // Score improvement reminders
+        if (! $progress['score_improvement']['achieved'] && $progress['score_improvement']['current'] < $progress['score_improvement']['target']) {
+            $needed = $progress['score_improvement']['target'] - $progress['score_improvement']['current'];
+            $reminders[] = [
+                'type' => 'score',
+                'message' => "You need {$needed}% more score improvement to reach your goal.",
+                'icon' => 'chart-bar',
+                'color' => 'green',
+                'action' => 'Practice more',
+                'action_url' => route('practice.sessions'),
+            ];
+        }
+
+        return $reminders;
+    }
+
+    public function closePracticeModal()
+    {
+        $this->showPracticeModal = false;
     }
 
     public function startInterview($jobPostingId = null)

@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('team_members', function (Blueprint $table) {
+        Schema::create('user_settings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('role')->default('member'); // lead, member, viewer
-            $table->timestamp('joined_at')->useCurrent();
+            $table->integer('job_applications_per_week')->default(5);
+            $table->integer('practice_interviews_per_week')->default(3);
+            $table->integer('score_improvement_target')->default(10); // percentage
             $table->timestamps();
 
-            $table->unique(['team_id', 'user_id']);
+            $table->unique('user_id'); // One settings record per user
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('team_members');
+        Schema::dropIfExists('user_settings');
     }
 };

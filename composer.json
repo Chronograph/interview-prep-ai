@@ -10,6 +10,7 @@
         "echolabsdev/prism": "^0.89.0",
         "guzzlehttp/guzzle": "^7.10",
         "intervention/image": "^3.11",
+        "laravel/cashier": "^16.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",

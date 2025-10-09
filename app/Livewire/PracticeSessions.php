@@ -13,6 +13,17 @@ class PracticeSessions extends Component
 {
     public $activeTab = 'upcoming_interviews';
 
+    // Modals
+    public $showStartPracticeModal = false;
+
+    public $showSessionTypeModal = false;
+
+    public $selectedSessionType = null;
+
+    public $selectedDifficulty = 'medium';
+
+    public $selectedFocusArea = 'general';
+
     // Statistics
     public $totalSessions = 24;
 
@@ -136,7 +147,31 @@ class PracticeSessions extends Component
             return redirect()->route('interview-sessions.create', ['interview_id' => $interviewId]);
         }
 
-        return redirect()->route('interview-sessions.create');
+        $this->showStartPracticeModal = true;
+    }
+
+    public function openSessionTypeModal($sessionType)
+    {
+        $this->selectedSessionType = $sessionType;
+        $this->showStartPracticeModal = false;
+        $this->showSessionTypeModal = true;
+    }
+
+    public function closeModals()
+    {
+        $this->showStartPracticeModal = false;
+        $this->showSessionTypeModal = false;
+        $this->selectedSessionType = null;
+    }
+
+    public function startSession()
+    {
+        // Create a new practice session with selected parameters
+        return redirect()->route('interview-sessions.create', [
+            'session_type' => $this->selectedSessionType,
+            'difficulty' => $this->selectedDifficulty,
+            'focus_area' => $this->selectedFocusArea,
+        ]);
     }
 
     public function viewCompanySheet($interviewId)

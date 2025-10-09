@@ -12,6 +12,7 @@ class Team extends Model
     use HasFactory;
 
     protected $fillable = [
+        'organization_id',
         'name',
         'description',
         'owner_id',
@@ -21,6 +22,14 @@ class Team extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Get the organization this team belongs to
+     */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
 
     /**
      * Get the owner of the team
@@ -64,5 +73,26 @@ class Team extends Model
         $member = $this->members()->where('user_id', $user->id)->first();
 
         return $member?->pivot->role;
+    }
+
+    /**
+     * Check if user has a specific role or higher in the team
+     */
+    public function hasRole(User $user, string $role): bool
+    {
+        if ($this->isOwner($user)) {
+            return true; // Team owner has all permissions
+        }
+
+        $userRole = $this->getMemberRole($user);
+        if (! $userRole) {
+            return false;
+        }
+
+        $hierarchy = ['viewer' => 1, 'member' => 2, 'lead' => 3];
+        $requiredLevel = $hierarchy[$role] ?? 0;
+        $userLevel = $hierarchy[$userRole] ?? 0;
+
+        return $userLevel >= $requiredLevel;
     }
 }

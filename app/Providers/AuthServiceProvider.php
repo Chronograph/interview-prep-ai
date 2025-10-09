@@ -33,6 +33,7 @@ class AuthServiceProvider extends ServiceProvider
         InterviewSession::class => InterviewSessionPolicy::class,
         JobPosting::class => JobPostingPolicy::class,
         MasteryTopic::class => MasteryTopicPolicy::class,
+        Team::class => TeamPolicy::class,
         UserDocument::class => UserDocumentPolicy::class,
     ];
 

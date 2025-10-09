@@ -60,6 +60,11 @@ class TeamManager extends Component
 
     public function mount()
     {
+        $this->teams = collect();
+        $this->totalTeams = 0;
+        $this->totalMembers = 0;
+        $this->activeTeams = 0;
+
         $this->refreshTeams();
         $this->calculateStatistics();
     }
@@ -111,10 +116,14 @@ class TeamManager extends Component
     {
         $this->validate();
 
+        $user = Auth::user();
+        $organization = $user->primaryOrganization();
+
         $team = Team::create([
             'name' => $this->name,
             'description' => $this->description,
             'owner_id' => Auth::id(),
+            'organization_id' => $organization?->id,
             'is_active' => $this->is_active,
         ]);
 
@@ -313,31 +322,59 @@ class TeamManager extends Component
 
     private function refreshTeams()
     {
-        // Get teams where user is owner
-        $ownedTeams = Team::where('owner_id', Auth::id())->with('members', 'owner')->get();
+        try {
+            $user = Auth::user();
+            $organization = $user->primaryOrganization();
 
-        // Get teams where user is a member
-        $memberTeams = Team::whereHas('members', function ($query) {
-            $query->where('user_id', Auth::id());
-        })->where('owner_id', '!=', Auth::id())->with('members', 'owner')->get();
+            if (! $organization) {
+                // If user has no organization, show teams they own or are members of (legacy behavior)
+                $ownedTeams = Team::where('owner_id', Auth::id())->with('members', 'owner')->get();
+                $memberTeams = Team::whereHas('members', function ($query) {
+                    $query->where('user_id', Auth::id());
+                })->where('owner_id', '!=', Auth::id())->with('members', 'owner')->get();
 
-        $this->teams = $ownedTeams->merge($memberTeams);
+                $this->teams = $ownedTeams->merge($memberTeams);
+            } else {
+                // Filter teams by organization
+                $ownedTeams = Team::where('organization_id', $organization->id)
+                    ->where('owner_id', Auth::id())
+                    ->with('members', 'owner')
+                    ->get();
+
+                $memberTeams = Team::where('organization_id', $organization->id)
+                    ->whereHas('members', function ($query) {
+                        $query->where('user_id', Auth::id());
+                    })
+                    ->where('owner_id', '!=', Auth::id())
+                    ->with('members', 'owner')
+                    ->get();
+
+                $this->teams = $ownedTeams->merge($memberTeams);
+            }
+        } catch (\Exception $e) {
+            logger()->error('Failed to refresh teams: '.$e->getMessage());
+            $this->teams = collect();
+        }
     }
 
     private function calculateStatistics()
     {
-        $this->totalTeams = $this->teams->count();
-        $this->activeTeams = $this->teams->where('is_active', true)->count();
+        $this->totalTeams = $this->teams ? $this->teams->count() : 0;
+        $this->activeTeams = $this->teams ? $this->teams->where('is_active', true)->count() : 0;
 
         $totalMembers = 0;
-        foreach ($this->teams as $team) {
-            $totalMembers += $team->members->count();
+        if ($this->teams) {
+            foreach ($this->teams as $team) {
+                $totalMembers += $team->members->count();
+            }
         }
         $this->totalMembers = $totalMembers;
     }
 
     public function render()
     {
-        return view('livewire.team-manager');
+        return view('livewire.team-manager', [
+            'teams' => $this->teams ?? collect(),
+        ]);
     }
 }
