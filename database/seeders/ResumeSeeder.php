@@ -262,7 +262,7 @@ class ResumeSeeder extends Seeder
                 'priority' => ['high', 'medium', 'low'][array_rand(['high', 'medium', 'low'])],
                 'application_date' => now()->subDays(rand(1, 60)),
                 'location' => ['San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX', 'Remote'][array_rand(['San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX', 'Remote'])],
-                'work_type' => ['full-time', 'contract', 'remote'][array_rand(['full-time', 'contract', 'remote'])],
+                'work_type' => ['remote', 'hybrid', 'onsite'][array_rand(['remote', 'hybrid', 'onsite'])],
             ]);
 
             // Create interviews for some applications
@@ -316,9 +316,11 @@ class ResumeSeeder extends Seeder
         $statuses = [
             'applied',
             'screening',
-            'interviewing',
+            'phone_interview',
+            'technical_interview',
+            'onsite_interview',
+            'final_interview',
             'offer',
-            'accepted',
             'rejected',
             'withdrawn',
         ];

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('subscriptions', function (Blueprint $table) {
             // Add unique constraint to ensure only one active subscription per organization
-            $table->unique(['organization_id', 'name'], 'unique_organization_subscription');
+            $table->unique(['organization_id'], 'unique_organization_subscription');
         });
     }
 

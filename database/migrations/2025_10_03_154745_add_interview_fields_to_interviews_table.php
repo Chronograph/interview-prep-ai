@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::table('interviews', function (Blueprint $table) {
             // Only add columns that don't exist
             if (! Schema::hasColumn('interviews', 'location')) {
-                $table->string('location')->nullable()->after('interview_time');
+                $table->string('location')->nullable();
             }
             if (! Schema::hasColumn('interviews', 'readiness_score')) {
-                $table->integer('readiness_score')->default(0)->after('location');
+                $table->integer('readiness_score')->default(0);
             }
         });
     }

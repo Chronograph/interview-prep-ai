@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -29,10 +30,14 @@ return new class extends Migration
             $table->json('why_work_here')->nullable(); // Reasons to work at this company
             $table->timestamp('last_updated_at')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'company_name']);
-            $table->index(['company_name', 'industry']);
+            // Index with limited key length for industry column
+            $table->index(['company_name'], 'company_briefs_company_name_index');
         });
+
+        // Create index with limited key length for industry column
+        DB::statement('CREATE INDEX company_briefs_industry_index ON company_briefs (industry(191))');
     }
 
     public function down(): void
