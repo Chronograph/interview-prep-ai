@@ -289,9 +289,15 @@
                             </div>
 
                             <!-- Action Button -->
-                            <x-button sm primary icon="eye">
-                                View
-                            </x-button>
+                            @if($session['status'] === 'active')
+                                <x-button wire:click="continueSession({{ $session['id'] }})" sm primary icon="play">
+                                    Continue
+                                </x-button>
+                            @else
+                                <x-button wire:click="continueSession({{ $session['id'] }})" sm outline icon="eye">
+                                    View
+                                </x-button>
+                            @endif
                         </div>
                     </x-card>
                 @empty

@@ -221,5 +221,7 @@
         </div>
     </div>
 </div>
+@else
+<!-- Modal not shown - hidden content to satisfy Livewire root tag requirement -->
 @endif
 </div>

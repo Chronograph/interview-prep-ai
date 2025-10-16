@@ -192,25 +192,25 @@ class PracticeSessions extends Component
             'role-specific' => [
                 'session_type' => 'behavioral',
                 'focus_area' => 'role_specific',
-                'difficulty' => 'intermediate',
+                'difficulty' => 'medium',
                 'questions_count' => 10,
             ],
             'elevator-pitch' => [
                 'session_type' => 'elevator_pitch',
                 'focus_area' => 'communication',
-                'difficulty' => 'beginner',
+                'difficulty' => 'easy',
                 'questions_count' => 5,
             ],
             'company-specific' => [
                 'session_type' => 'company_specific',
                 'focus_area' => 'company_research',
-                'difficulty' => 'advanced',
+                'difficulty' => 'hard',
                 'questions_count' => 15,
             ],
             'skill-improvement' => [
                 'session_type' => 'skill_focused',
                 'focus_area' => $this->selectedFocusArea,
-                'difficulty' => 'intermediate',
+                'difficulty' => 'medium',
                 'questions_count' => 10,
             ],
         ];
@@ -224,6 +224,12 @@ class PracticeSessions extends Component
 
         // Create a new practice session with selected parameters
         return redirect()->route('interview-sessions.create', $config);
+    }
+
+    public function continueSession($sessionId)
+    {
+        // Redirect to the enhanced interview interface for the existing session
+        return redirect()->route('interview-sessions.enhanced', $sessionId);
     }
 
     public function viewCompanySheet($interviewId)

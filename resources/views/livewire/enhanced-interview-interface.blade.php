@@ -12,6 +12,24 @@
                 </button>
             </div>
 
+            <!-- Interview Details -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 dark:from-gray-700/50 dark:to-blue-900/20 rounded-xl border border-gray-200 dark:border-gray-600">
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Company</div>
+                        <div class="font-semibold text-gray-900 dark:text-gray-100">General Practice</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Role</div>
+                        <div class="font-semibold text-gray-900 dark:text-gray-100">Interview Practice</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Difficulty</div>
+                        <div class="font-semibold text-gray-900 dark:text-gray-100 capitalize">{{ $session->difficulty_level }} ({{ $totalQuestions }} questions)</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Progress Bar -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-2">

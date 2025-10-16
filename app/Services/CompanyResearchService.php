@@ -222,15 +222,20 @@ Return as a JSON array of strings.";
 
     public function analyzeJobPosting(string $url): array
     {
-        // Always use fallback for now since AI service is not available
-        Log::info('Using fallback job analysis (AI service unavailable)', [
+        // EMERGENCY: Disable all AI service calls to prevent timeouts
+        // TODO: Fix HTTP client timeout configuration before re-enabling
+        Log::info('Using fallback job analysis (AI service disabled due to timeout issues)', [
             'url' => $url
         ]);
         
         return $this->getFallbackJobAnalysis($url);
         
-        /* AI Service temporarily disabled - uncomment when LM Studio is running
+        /* AI Service calls disabled due to persistent timeout issues
         try {
+            Log::info('Analyzing job posting with OpenAI', [
+                'url' => $url
+            ]);
+            
             // Try to use AI service first
             $prompt = "Analyze this job posting URL and extract key information: {$url}
 
@@ -259,9 +264,14 @@ Return as a JSON array of strings.";
                     throw new \Exception('Invalid JSON response from AI');
                 }
                 
+                Log::info('Job posting analysis completed with OpenAI', [
+                    'url' => $url,
+                    'analysis' => $data
+                ]);
+                
                 return $data;
             } catch (\Exception $e) {
-                Log::warning('AI response parsing failed, using fallback data', [
+                Log::warning('OpenAI response parsing failed, using fallback data', [
                     'url' => $url,
                     'content' => $content,
                     'error' => $e->getMessage()
@@ -271,7 +281,7 @@ Return as a JSON array of strings.";
             }
 
         } catch (\Exception $e) {
-            Log::info('AI service unavailable, using fallback job analysis', [
+            Log::info('OpenAI service failed, using fallback job analysis', [
                 'url' => $url,
                 'error' => $e->getMessage()
             ]);

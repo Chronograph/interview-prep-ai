@@ -2,13 +2,13 @@
 
 namespace App\Livewire;
 
-use App\Models\Resume;
 use App\Models\JobPosting;
+use App\Models\Resume;
 use App\Services\AIService;
 use App\Services\CompanyResearchService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -19,21 +19,28 @@ class AddNewInterviewModal extends Component
 
     // Modal state
     public $showModal = false;
-    
+
     // Form data
     public $jobPostingUrl = '';
+
     public $selectedResumeId = null;
+
     public $uploadNewResume = false;
+
     public $newResumeFile = null;
-    
+
     // Data
     public $userResumes = [];
+
     public $resumeMatches = [];
+
     public $analyzingJob = false;
+
     public $jobAnalysis = null;
-    
+
     // Services
     protected AIService $aiService;
+
     protected CompanyResearchService $companyService;
 
     public function boot(AIService $aiService, CompanyResearchService $companyService)
@@ -94,44 +101,45 @@ class AddNewInterviewModal extends Component
 
     public function analyzeJobPosting()
     {
-        \Log::info('Analyze button clicked', [
+        Log::info('Analyze button clicked', [
             'url' => $this->jobPostingUrl,
-            'user_id' => Auth::id()
+            'user_id' => Auth::id(),
         ]);
 
         if (empty($this->jobPostingUrl)) {
             session()->flash('error', 'Please enter a job posting URL');
+
             return;
         }
 
         $this->analyzingJob = true;
-        
+
         try {
-            \Log::info('Starting job analysis', ['url' => $this->jobPostingUrl]);
-            
+            Log::info('Starting job analysis', ['url' => $this->jobPostingUrl]);
+
             // Analyze the job posting using AI
             $this->jobAnalysis = $this->companyService->analyzeJobPosting($this->jobPostingUrl);
-            
-            \Log::info('Job analysis completed', ['analysis' => $this->jobAnalysis]);
-            
+
+            Log::info('Job analysis completed', ['analysis' => $this->jobAnalysis]);
+
             // Calculate resume matches
             $this->calculateResumeMatches();
-            
-            \Log::info('Resume matches calculated', ['matches_count' => count($this->resumeMatches)]);
-            
+
+            Log::info('Resume matches calculated', ['matches_count' => count($this->resumeMatches)]);
+
             // Force Livewire to update the UI
             $this->dispatch('$refresh');
-            
+
             session()->flash('success', 'Job posting analyzed successfully!');
-            
+
         } catch (\Exception $e) {
-            \Log::error('Job analysis failed', [
+            Log::error('Job analysis failed', [
                 'url' => $this->jobPostingUrl,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            
-            session()->flash('error', 'Failed to analyze job posting: ' . $e->getMessage());
+
+            session()->flash('error', 'Failed to analyze job posting: '.$e->getMessage());
         } finally {
             $this->analyzingJob = false;
         }
@@ -139,42 +147,44 @@ class AddNewInterviewModal extends Component
 
     public function calculateResumeMatches()
     {
-        \Log::info('Calculating resume matches', [
-            'job_analysis_exists' => !empty($this->jobAnalysis),
+        Log::info('Calculating resume matches', [
+            'job_analysis_exists' => ! empty($this->jobAnalysis),
             'user_resumes_count' => count($this->userResumes),
-            'user_resumes' => $this->userResumes
+            'user_resumes' => $this->userResumes,
         ]);
 
-        if (!$this->jobAnalysis) {
-            \Log::warning('No job analysis available for resume matching');
+        if (! $this->jobAnalysis) {
+            Log::warning('No job analysis available for resume matching');
+
             return;
         }
 
         if (empty($this->userResumes)) {
-            \Log::warning('No user resumes available for matching');
+            Log::warning('No user resumes available for matching');
+
             return;
         }
 
         $jobSkills = $this->jobAnalysis['skills'] ?? [];
         $jobRequirements = $this->jobAnalysis['requirements'] ?? [];
-        
-        \Log::info('Job skills and requirements', [
+
+        Log::info('Job skills and requirements', [
             'job_skills' => $jobSkills,
-            'job_requirements' => $jobRequirements
+            'job_requirements' => $jobRequirements,
         ]);
-        
+
         $this->resumeMatches = collect($this->userResumes)->map(function ($resume) use ($jobSkills, $jobRequirements) {
             $matchScore = $this->calculateMatchScore($resume, $jobSkills, $jobRequirements);
             $matchLevel = $this->getMatchLevel($matchScore);
             $matchingKeywords = $this->getMatchingKeywords($resume, $jobSkills, $jobRequirements);
-            
-            \Log::info('Resume match calculated', [
+
+            Log::info('Resume match calculated', [
                 'resume_id' => $resume['id'],
                 'match_score' => $matchScore,
                 'match_level' => $matchLevel,
-                'matching_keywords' => $matchingKeywords
+                'matching_keywords' => $matchingKeywords,
             ]);
-            
+
             return [
                 'resume' => $resume,
                 'match_score' => $matchScore,
@@ -182,10 +192,10 @@ class AddNewInterviewModal extends Component
                 'matching_keywords' => $matchingKeywords,
             ];
         })->sortByDesc('match_score')->values()->toArray();
-        
-        \Log::info('Resume matches completed', [
+
+        Log::info('Resume matches completed', [
             'matches_count' => count($this->resumeMatches),
-            'matches' => $this->resumeMatches
+            'matches' => $this->resumeMatches,
         ]);
     }
 
@@ -194,7 +204,7 @@ class AddNewInterviewModal extends Component
         $score = 0;
         $resumeSkills = $resume['skills'] ?? [];
         $resumeContent = strtolower($resume['content'] ?? '');
-        
+
         // Skill matching (60% of score)
         $skillMatches = 0;
         foreach ($jobSkills as $skill) {
@@ -203,7 +213,7 @@ class AddNewInterviewModal extends Component
             }
         }
         $score += $skillMatches > 0 ? ($skillMatches / count($jobSkills)) * 60 : 0;
-        
+
         // Keyword matching in content (40% of score)
         $keywordMatches = 0;
         $allKeywords = array_merge($jobSkills, $jobRequirements);
@@ -213,7 +223,7 @@ class AddNewInterviewModal extends Component
             }
         }
         $score += $keywordMatches > 0 ? ($keywordMatches / count($allKeywords)) * 40 : 0;
-        
+
         return min(round($score), 100);
     }
 
@@ -224,28 +234,28 @@ class AddNewInterviewModal extends Component
                 'label' => 'Excellent Match',
                 'color' => 'bg-green-100 text-green-800',
                 'icon' => 'star',
-                'icon_color' => 'text-green-600'
+                'icon_color' => 'text-green-600',
             ];
         } elseif ($score >= 70) {
             return [
                 'label' => 'Good Match',
                 'color' => 'bg-blue-100 text-blue-800',
                 'icon' => 'wave',
-                'icon_color' => 'text-blue-600'
+                'icon_color' => 'text-blue-600',
             ];
         } elseif ($score >= 50) {
             return [
                 'label' => 'Fair Match',
                 'color' => 'bg-gray-100 text-gray-800',
                 'icon' => 'document',
-                'icon_color' => 'text-gray-600'
+                'icon_color' => 'text-gray-600',
             ];
         } else {
             return [
                 'label' => 'Poor Match',
                 'color' => 'bg-red-100 text-red-800',
                 'icon' => 'exclamation',
-                'icon_color' => 'text-red-600'
+                'icon_color' => 'text-red-600',
             ];
         }
     }
@@ -255,16 +265,16 @@ class AddNewInterviewModal extends Component
         $matchingKeywords = [];
         $resumeSkills = $resume['skills'] ?? [];
         $resumeContent = strtolower($resume['content'] ?? '');
-        
+
         $allKeywords = array_merge($jobSkills, $jobRequirements);
-        
+
         foreach ($allKeywords as $keyword) {
             if (in_array(strtolower($keyword), array_map('strtolower', $resumeSkills)) ||
                 strpos($resumeContent, strtolower($keyword)) !== false) {
                 $matchingKeywords[] = $keyword;
             }
         }
-        
+
         return array_slice($matchingKeywords, 0, 3); // Return top 3 matches
     }
 
@@ -276,16 +286,16 @@ class AddNewInterviewModal extends Component
 
     public function toggleUploadNew()
     {
-        $this->uploadNewResume = !$this->uploadNewResume;
+        $this->uploadNewResume = ! $this->uploadNewResume;
         $this->selectedResumeId = null;
     }
 
     public function uploadNewResume()
     {
-        \Log::info('Upload new resume button clicked', [
+        Log::info('Upload new resume button clicked', [
             'has_file' => $this->newResumeFile ? true : false,
             'file_name' => $this->newResumeFile ? $this->newResumeFile->getClientOriginalName() : null,
-            'user_id' => Auth::id()
+            'user_id' => Auth::id(),
         ]);
 
         $this->validate([
@@ -293,32 +303,32 @@ class AddNewInterviewModal extends Component
         ]);
 
         try {
-            \Log::info('Starting resume upload process');
-            
+            Log::info('Starting resume upload process');
+
             // Process the uploaded resume
             $resume = $this->processUploadedResume();
-            
-            \Log::info('Resume processed successfully', ['resume_id' => $resume->id]);
-            
+
+            Log::info('Resume processed successfully', ['resume_id' => $resume->id]);
+
             // Select the newly uploaded resume
             $this->selectedResumeId = $resume->id;
             $this->uploadNewResume = false;
-            
+
             // Reload resumes and recalculate matches
             $this->loadUserResumes();
             if ($this->jobAnalysis) {
                 $this->calculateResumeMatches();
             }
-            
-            \Log::info('Resume upload completed successfully');
+
+            Log::info('Resume upload completed successfully');
             session()->flash('success', 'Resume uploaded and analyzed successfully!');
-            
+
         } catch (\Exception $e) {
-            \Log::error('Resume upload failed', [
+            Log::error('Resume upload failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            session()->flash('error', 'Failed to upload resume: ' . $e->getMessage());
+            session()->flash('error', 'Failed to upload resume: '.$e->getMessage());
         }
     }
 
@@ -326,8 +336,7 @@ class AddNewInterviewModal extends Component
     {
         $file = $this->newResumeFile;
         $filename = $file->getClientOriginalName();
-        $content = file_get_contents($file->getRealPath());
-        
+
         // Use fallback analysis since AI service is not available
         $analysis = [
             'summary' => 'Resume uploaded successfully',
@@ -335,92 +344,105 @@ class AddNewInterviewModal extends Component
             'experience' => ['Previous work experience'],
             'education' => ['Educational background'],
         ];
-        
+
         // Create the resume record
-        $resume = Resume::create([
+        $resumeData = [
             'user_id' => Auth::id(),
             'title' => pathinfo($filename, PATHINFO_FILENAME),
             'file_path' => $file->store('resumes', 'public'),
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'raw_content' => $content,
+            // raw_content intentionally omitted to avoid binary content issues
             'summary' => $analysis['summary'],
             'skills' => $analysis['skills'],
             'experience' => $analysis['experience'],
             'education' => $analysis['education'],
             'optimization_score' => 0, // Will be calculated
+        ];
+
+        Log::info('Creating resume with data', [
+            'user_id' => $resumeData['user_id'],
+            'title' => $resumeData['title'],
+            'file_path' => $resumeData['file_path'],
+            'file_type' => $resumeData['file_type'],
+            'file_size' => $resumeData['file_size'],
         ]);
-        
+
+        $resume = Resume::create($resumeData);
+
         // Update optimization score
         $resume->updateOptimizationScore();
-        
+
         return $resume;
     }
 
     public function startInterviewPractice()
     {
-        \Log::info('Start Interview Practice button clicked', [
+        Log::info('Start Interview Practice button clicked', [
             'url' => $this->jobPostingUrl,
             'selected_resume_id' => $this->selectedResumeId,
             'upload_new_resume' => $this->uploadNewResume,
             'has_new_resume_file' => $this->newResumeFile ? true : false,
-            'user_id' => Auth::id()
+            'user_id' => Auth::id(),
         ]);
 
         if (empty($this->jobPostingUrl)) {
             session()->flash('error', 'Please enter a job posting URL');
+
             return;
         }
 
-        if (!$this->selectedResumeId && !$this->uploadNewResume) {
+        if (! $this->selectedResumeId && ! $this->uploadNewResume) {
             session()->flash('error', 'Please select a resume or upload a new one');
+
             return;
         }
 
-        if ($this->uploadNewResume && !$this->newResumeFile) {
+        if ($this->uploadNewResume && ! $this->newResumeFile) {
             session()->flash('error', 'Please upload a resume file');
+
             return;
         }
 
         try {
-            \Log::info('Creating job posting record');
-            
+            Log::info('Creating job posting record');
+
             // Create job posting record
             $jobPosting = $this->createJobPosting();
-            
-            \Log::info('Job posting created', ['job_posting_id' => $jobPosting->id]);
-            
+
+            Log::info('Job posting created', ['job_posting_id' => $jobPosting->id]);
+
             // Get or create resume
-            $resume = $this->selectedResumeId 
+            $resume = $this->selectedResumeId
                 ? Resume::find($this->selectedResumeId)
                 : $this->processUploadedResume();
-            
-            \Log::info('Resume obtained', ['resume_id' => $resume->id]);
-            
+
+            Log::info('Resume obtained', ['resume_id' => $resume->id]);
+
             // Create interview session
             $sessionConfig = [
                 'session_type' => 'company_specific',
                 'focus_area' => 'company_research',
-                'difficulty' => 'advanced',
+                'difficulty' => 'hard',
                 'questions_count' => 15,
                 'job_posting_id' => $jobPosting->id,
                 'resume_id' => $resume->id,
             ];
-            
-            \Log::info('Redirecting to interview session creation', $sessionConfig);
-            
+
+            Log::info('Redirecting to interview session creation', $sessionConfig);
+
             // Close modal and redirect to interview session creation
             $this->closeModal();
-            
+
             return redirect()->route('interview-sessions.create', $sessionConfig);
-            
+
         } catch (\Exception $e) {
-            \Log::error('Failed to start interview practice', [
+            Log::error('Failed to start interview practice', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            
-            session()->flash('error', 'Failed to start interview practice: ' . $e->getMessage());
+
+            session()->flash('error', 'Failed to start interview practice: '.$e->getMessage());
         }
     }
 
@@ -441,19 +463,19 @@ class AddNewInterviewModal extends Component
 
     public function formatFileSize($bytes): string
     {
-        if (!$bytes) {
+        if (! $bytes) {
             return 'N/A';
         }
 
         if ($bytes < 1024) {
-            return $bytes . ' B';
+            return $bytes.' B';
         }
 
         if ($bytes < 1024 * 1024) {
-            return round($bytes / 1024, 1) . ' KB';
+            return round($bytes / 1024, 1).' KB';
         }
 
-        return round($bytes / (1024 * 1024), 1) . ' MB';
+        return round($bytes / (1024 * 1024), 1).' MB';
     }
 
     public function render()

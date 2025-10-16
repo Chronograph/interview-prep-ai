@@ -23,32 +23,17 @@
                             </select>
                         </div>
 
-                        <!-- Focus Area -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Focus Area</label>
-                            <input type="text" wire:model="focus_area" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        </div>
 
                         <!-- Difficulty -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Difficulty</label>
                             <select wire:model="difficulty" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="beginner">Beginner</option>
-                                <option value="intermediate">Intermediate</option>
-                                <option value="advanced">Advanced</option>
+                                <option value="easy">Easy (5 questions)</option>
+                                <option value="medium">Medium (10 questions)</option>
+                                <option value="hard">Hard (15 questions)</option>
                             </select>
                         </div>
 
-                        <!-- Job Posting (Optional) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Posting (Optional)</label>
-                            <select wire:model="job_posting_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select a job posting</option>
-                                @foreach($jobPostings as $posting)
-                                    <option value="{{ $posting['id'] }}">{{ $posting['title'] }} - {{ $posting['company'] }}</option>
-                                @endforeach
-                            </select>
-                        </div>
 
 
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">

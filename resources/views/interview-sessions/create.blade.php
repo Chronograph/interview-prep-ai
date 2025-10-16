@@ -64,59 +64,31 @@
                             </div>
                         </div>
 
-                        <!-- Focus Area -->
-                        <div class="space-y-4">
-                            <label class="block text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Focus Area</label>
-                            <div class="relative">
-                                <input
-                                    type="text"
-                                    name="focus_area"
-                                    value="General Interview Skills"
-                                    class="w-full px-4 py-4 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300"
-                                    placeholder="e.g., Leadership, Problem Solving, Communication"
-                                />
-                            </div>
-                        </div>
 
                         <!-- Difficulty Level -->
                         <div class="space-y-4">
                             <label class="block text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Difficulty Level</label>
                             <div class="grid grid-cols-3 gap-4">
                                 <label class="flex items-center flex-col p-4 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-300 hover:shadow-xl transition-all duration-300 cursor-pointer">
-                                    <input type="radio" name="difficulty" value="beginner" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 mb-2">
-                                    <div class="text-green-600 dark:text-green-400 font-bold">Beginner</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Entry level</div>
+                                    <input type="radio" name="difficulty" value="easy" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 mb-2">
+                                    <div class="text-green-600 dark:text-green-400 font-bold">Easy</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">5 questions</div>
                                 </label>
 
                                 <label class="flex items-center flex-col p-4 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-600 hover:border-yellow-300 dark:hover:border-yellow-300 hover:shadow-xl transition-all duration-300 cursor-pointer">
-                                    <input type="radio" name="difficulty" value="intermediate" checked class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 mb-2">
-                                    <div class="text-yellow-600 dark:text-yellow-400 font-bold">Intermediate</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Mid level</div>
+                                    <input type="radio" name="difficulty" value="medium" checked class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 mb-2">
+                                    <div class="text-yellow-600 dark:text-yellow-400 font-bold">Medium</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">10 questions</div>
                                 </label>
 
                                 <label class="flex items-center flex-col p-4 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-300 hover:shadow-xl transition-all duration-300 cursor-pointer">
-                                    <input type="radio" name="difficulty" value="advanced" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 mb-2">
-                                    <div class="text-red-600 dark:text-red-400 font-bold">Advanced</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Senior level</div>
+                                    <input type="radio" name="difficulty" value="hard" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 mb-2">
+                                    <div class="text-red-600 dark:text-red-400 font-bold">Hard</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">15 questions</div>
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Job Posting Selection -->
-                        @if(count($jobPostings) > 0)
-                        <div class="space-y-4">
-                            <label class="block text-lg font-bold text-gray-900 dark:text-gray-100">Job Posting (Optional)</label>
-                            <select
-                                name="job_posting_id"
-                                class="w-full px-4 py-3 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300"
-                            >
-                                <option value="">Select a job posting (optional)</option>
-                                @foreach($jobPostings as $jobPosting)
-                                    <option value="{{ $jobPosting->id }}">{{ $jobPosting->title }} - {{ $jobPosting->company }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        @endif
 
                     </form>
                 </div>
@@ -135,8 +107,8 @@
                 </a>
 
                 <button
-                    type="submit"
-                    form="interview-form"
+                    type="button"
+                    wire:click="startSession"
                     class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 border border-transparent rounded-2xl font-semibold text-white shadow-xl hover:from-purple-700 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 transition-all duration-300 transform hover:scale-105"
                 >
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,34 +120,4 @@
         </div>
     </div>
 
-    <script>
-        document.getElementById('interview-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const response = await fetch('{{ route("interview-sessions.store") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    window.location.href = result.redirect;
-                } else {
-                    alert('Error: ' + (result.message || 'Failed to start interview session'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to start interview session. Please try again.');
-            }
-        });
-    </script>
 </x-app-layout>
