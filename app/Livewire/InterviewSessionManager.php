@@ -9,8 +9,12 @@ use App\Services\InterviewPracticeService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
+#[Layout('layouts.app')]
+#[Title('Interview Session Manager')]
 class InterviewSessionManager extends Component
 {
     use AuthorizesRequests;
