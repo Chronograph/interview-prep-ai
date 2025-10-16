@@ -8,6 +8,7 @@ use App\Services\AIService;
 use App\Services\CompanyResearchService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -281,13 +282,23 @@ class AddNewInterviewModal extends Component
 
     public function uploadNewResume()
     {
+        \Log::info('Upload new resume button clicked', [
+            'has_file' => $this->newResumeFile ? true : false,
+            'file_name' => $this->newResumeFile ? $this->newResumeFile->getClientOriginalName() : null,
+            'user_id' => Auth::id()
+        ]);
+
         $this->validate([
             'newResumeFile' => 'required|file|mimes:pdf,doc,docx|max:10240', // 10MB max
         ]);
 
         try {
+            \Log::info('Starting resume upload process');
+            
             // Process the uploaded resume
             $resume = $this->processUploadedResume();
+            
+            \Log::info('Resume processed successfully', ['resume_id' => $resume->id]);
             
             // Select the newly uploaded resume
             $this->selectedResumeId = $resume->id;
@@ -299,9 +310,14 @@ class AddNewInterviewModal extends Component
                 $this->calculateResumeMatches();
             }
             
+            \Log::info('Resume upload completed successfully');
             session()->flash('success', 'Resume uploaded and analyzed successfully!');
             
         } catch (\Exception $e) {
+            \Log::error('Resume upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             session()->flash('error', 'Failed to upload resume: ' . $e->getMessage());
         }
     }
