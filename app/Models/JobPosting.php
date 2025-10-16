@@ -25,6 +25,7 @@ class JobPosting extends Model
     ];
 
     protected $casts = [
+        'requirements' => 'array',
         'skills' => 'array',
         'salary_min' => 'decimal:2',
         'salary_max' => 'decimal:2',
