@@ -104,12 +104,12 @@ class PracticeSessions extends Component
             ->where('is_practice', true)
             ->count();
 
-        // Calculate average score
+        // Calculate average score (convert from 10-point scale to 10-point scale)
         $avgScore = InterviewSession::where('user_id', $user->id)
             ->where('is_practice', true)
             ->whereNotNull('overall_score')
             ->avg('overall_score');
-        $this->averageScore = round($avgScore ?? 7.2, 1);
+        $this->averageScore = round(($avgScore ?? 7.2) * 10, 1); // Convert to 10-point scale
 
         // Calculate sessions this week
         $this->sessionsThisWeek = InterviewSession::where('user_id', $user->id)
@@ -123,14 +123,38 @@ class PracticeSessions extends Component
             ->where('started_at', '>=', now())
             ->count();
 
-        // Calculate need practice count (interviews scheduled)
-        $this->needPracticeCount = Interview::where('user_id', $user->id)
-            ->whereNotNull('started_at')
-            ->where('started_at', '>=', now())
+        // Calculate need practice count (sessions with low scores)
+        $this->needPracticeCount = InterviewSession::where('user_id', $user->id)
+            ->where('is_practice', true)
+            ->where(function($query) {
+                $query->whereNull('overall_score')
+                      ->orWhere('overall_score', '<', 7.0);
+            })
             ->count();
 
-        // Mock score improvement calculation
-        $this->scoreImprovement = 18; // This would be calculated based on historical data
+        // Calculate score improvement (compare last month vs previous month)
+        $lastMonth = now()->subMonth();
+        $previousMonth = now()->subMonths(2);
+        
+        $lastMonthAvg = InterviewSession::where('user_id', $user->id)
+            ->where('is_practice', true)
+            ->where('created_at', '>=', $lastMonth->startOfMonth())
+            ->where('created_at', '<', $lastMonth->endOfMonth())
+            ->whereNotNull('overall_score')
+            ->avg('overall_score') ?? 0;
+            
+        $previousMonthAvg = InterviewSession::where('user_id', $user->id)
+            ->where('is_practice', true)
+            ->where('created_at', '>=', $previousMonth->startOfMonth())
+            ->where('created_at', '<', $previousMonth->endOfMonth())
+            ->whereNotNull('overall_score')
+            ->avg('overall_score') ?? 0;
+
+        if ($previousMonthAvg > 0) {
+            $this->scoreImprovement = round((($lastMonthAvg - $previousMonthAvg) / $previousMonthAvg) * 100, 1);
+        } else {
+            $this->scoreImprovement = 18; // Default improvement
+        }
     }
 
     public function setActiveTab($tab)
@@ -163,12 +187,43 @@ class PracticeSessions extends Component
 
     public function startSession()
     {
-        // Create a new practice session with selected parameters
-        return redirect()->route('interview-sessions.create', [
+        // Map session types to appropriate configurations
+        $sessionConfigs = [
+            'role-specific' => [
+                'session_type' => 'behavioral',
+                'focus_area' => 'role_specific',
+                'difficulty' => 'intermediate',
+                'questions_count' => 10,
+            ],
+            'elevator-pitch' => [
+                'session_type' => 'elevator_pitch',
+                'focus_area' => 'communication',
+                'difficulty' => 'beginner',
+                'questions_count' => 5,
+            ],
+            'company-specific' => [
+                'session_type' => 'company_specific',
+                'focus_area' => 'company_research',
+                'difficulty' => 'advanced',
+                'questions_count' => 15,
+            ],
+            'skill-improvement' => [
+                'session_type' => 'skill_focused',
+                'focus_area' => $this->selectedFocusArea,
+                'difficulty' => 'intermediate',
+                'questions_count' => 10,
+            ],
+        ];
+
+        $config = $sessionConfigs[$this->selectedSessionType] ?? [
             'session_type' => $this->selectedSessionType,
-            'difficulty' => $this->selectedDifficulty,
             'focus_area' => $this->selectedFocusArea,
-        ]);
+            'difficulty' => $this->selectedDifficulty,
+            'questions_count' => 10,
+        ];
+
+        // Create a new practice session with selected parameters
+        return redirect()->route('interview-sessions.create', $config);
     }
 
     public function viewCompanySheet($interviewId)

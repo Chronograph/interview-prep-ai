@@ -311,57 +311,142 @@
     <!-- Start Practice Modal -->
     @if($showStartPracticeModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div wire:click="closeModals" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                    <div class="bg-gradient-to-br from-blue-600 to-purple-600 px-6 py-4">
+                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                    
+                    <!-- Modal Header -->
+                    <div class="px-8 py-6 border-b border-gray-200">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-2xl font-bold text-white">Start Practice Session</h3>
-                            <button wire:click="closeModals" class="text-white hover:text-gray-200">
-                                <x-icon name="x-mark" class="w-6 h-6" />
+                            <div>
+                                <h3 class="text-2xl font-bold text-gray-900">Start Practice Session</h3>
+                                <p class="text-gray-600 mt-1">Choose the type of interview practice that best fits your current goals and preparation needs.</p>
+                            </div>
+                            <button wire:click="closeModals" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
                             </button>
                         </div>
                     </div>
-                    <div class="bg-white px-6 py-6">
-                        <p class="text-gray-600 mb-6">Choose what type of practice session you'd like to start</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <button wire:click="openSessionTypeModal('behavioral')" class="border-2 border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all p-4 rounded-lg cursor-pointer">
-                                <div class="text-center">
-                                    <div class="p-3 bg-blue-100 rounded-xl inline-block mb-3">
-                                        <x-icon name="user-group" class="w-8 h-8 text-blue-600" />
+
+                    <!-- Modal Body -->
+                    <div class="px-8 py-6">
+                        <!-- Practice Session Options Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            
+                            <!-- Card 1: Practice Generic Role-Specific Interviews -->
+                            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" wire:click="openSessionTypeModal('role-specific')">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900 mb-2">Practice Generic Role-Specific Interviews</h4>
+                                        <p class="text-gray-600 text-sm mb-4">Practice common interview questions for Product Manager and Product Design Manager roles</p>
                                     </div>
-                                    <h4 class="font-semibold text-gray-900 mb-1">Behavioral</h4>
-                                    <p class="text-sm text-gray-500">STAR method practice</p>
                                 </div>
-                            </button>
-                            <button wire:click="openSessionTypeModal('technical')" class="border-2 border-gray-200 hover:border-purple-500 hover:shadow-lg transition-all p-4 rounded-lg cursor-pointer">
-                                <div class="text-center">
-                                    <div class="p-3 bg-purple-100 rounded-xl inline-block mb-3">
-                                        <x-icon name="code-bracket" class="w-8 h-8 text-purple-600" />
+                                <div class="flex items-center justify-between">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Intermediate</span>
+                                    <button class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                                        <span class="text-sm font-medium">Start Session</span>
+                                        <div class="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Card 2: Refine Elevator Pitch -->
+                            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" wire:click="openSessionTypeModal('elevator-pitch')">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900 mb-2">Refine Elevator Pitch</h4>
+                                        <p class="text-gray-600 text-sm mb-4">Perfect your 30-60 second personal introduction and value proposition</p>
                                     </div>
-                                    <h4 class="font-semibold text-gray-900 mb-1">Technical</h4>
-                                    <p class="text-sm text-gray-500">Coding & algorithms</p>
                                 </div>
-                            </button>
-                            <button wire:click="openSessionTypeModal('product')" class="border-2 border-gray-200 hover:border-green-500 hover:shadow-lg transition-all p-4 rounded-lg cursor-pointer">
-                                <div class="text-center">
-                                    <div class="p-3 bg-green-100 rounded-xl inline-block mb-3">
-                                        <x-icon name="light-bulb" class="w-8 h-8 text-green-600" />
+                                <div class="flex items-center justify-between">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Beginner</span>
+                                    <button class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                                        <span class="text-sm font-medium">Start Session</span>
+                                        <div class="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                            </svg>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Card 3: Add a New Job Interview -->
+                            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" wire:click="openSessionTypeModal('company-specific')">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900 mb-2">Add a New Job Interview</h4>
+                                        <p class="text-gray-600 text-sm mb-4">Schedule practice for a specific company and role you're interviewing for</p>
                                     </div>
-                                    <h4 class="font-semibold text-gray-900 mb-1">Product</h4>
-                                    <p class="text-sm text-gray-500">PM questions</p>
                                 </div>
-                            </button>
-                            <button wire:click="openSessionTypeModal('quick')" class="border-2 border-gray-200 hover:border-indigo-500 hover:shadow-lg transition-all p-4 rounded-lg cursor-pointer">
-                                <div class="text-center">
-                                    <div class="p-3 bg-indigo-100 rounded-xl inline-block mb-3">
-                                        <x-icon name="bolt" class="w-8 h-8 text-indigo-600" />
+                                <div class="flex items-center justify-between">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Advanced</span>
+                                    <button class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                                        <span class="text-sm font-medium">Start Session</span>
+                                        <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                                            </svg>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Card 4: Level Up Skills -->
+                            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" wire:click="openSessionTypeModal('skill-improvement')">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900 mb-2">Level Up Skills</h4>
+                                        <p class="text-gray-600 text-sm mb-4">Focus on specific competencies based on your performance analytics</p>
                                     </div>
-                                    <h4 class="font-semibold text-gray-900 mb-1">Quick Practice</h4>
-                                    <p class="text-sm text-gray-500">10-15 minutes</p>
                                 </div>
-                            </button>
+                                <div class="flex items-center justify-between">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Intermediate</span>
+                                    <button class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                                        <span class="text-sm font-medium">Start Session</span>
+                                        <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z"/>
+                                            </svg>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Practice Stats Section -->
+                        <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-900 mb-1">Your Practice Stats</h4>
+                                    <p class="text-gray-600 text-sm">{{ $totalSessions }} sessions completed • {{ $averageScore }} avg score • {{ $scoreImprovement }}% improvement this month</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-3xl font-bold text-gray-900">{{ $averageScore }}/10</div>
+                                    <div class="text-green-600 font-medium">Ready for interviews</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pro Tip Section -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11M11,9H13V7H11V9Z"/>
+                                    </svg>
+                                </div>
+                                <p class="text-blue-800 text-sm">
+                                    <strong>Pro tip:</strong> Start with generic role-specific interviews if you're new, or jump into company-specific practice if you have an upcoming interview.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
