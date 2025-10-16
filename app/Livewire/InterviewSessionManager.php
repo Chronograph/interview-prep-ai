@@ -124,6 +124,9 @@ class InterviewSessionManager extends Component
             $this->loadNextQuestion();
 
             $this->dispatch('session-started', sessionId: $this->currentSession->id);
+            
+            // Redirect to enhanced interview interface
+            return redirect()->route('interview-sessions.enhanced', $this->currentSession->id);
 
         } catch (\Exception $e) {
             session()->flash('error', 'Failed to start interview session: '.$e->getMessage());

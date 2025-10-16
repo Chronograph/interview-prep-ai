@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
 
     // Interview Session routes (Livewire)
     Route::get('/interview-sessions/create', InterviewSessionManager::class)->name('interview-sessions.create');
+    Route::get('/interview-sessions/{session}/enhanced', \App\Livewire\EnhancedInterviewInterface::class)->name('interview-sessions.enhanced');
     // Interview Session routes (Livewire)
     Route::get('/interview-sessions/{session}', function ($session) {
         return response('Session details: TODO convert to Livewire session detail component for interview sessions.');
