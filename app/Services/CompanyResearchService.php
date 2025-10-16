@@ -4,13 +4,13 @@ namespace App\Services;
 
 use App\Models\CompanyBrief;
 use App\Models\User;
-use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class CompanyResearchService
 {
     public function __construct(
+        private readonly AIService $aiService,
         private readonly int $maxRetries = 3
     ) {}
 
@@ -83,17 +83,8 @@ Provide accurate, up-to-date information. If certain information is not availabl
 
 Return only valid JSON without any markdown formatting.";
 
-        $response = OpenAI::chat()->create([
-            'model' => 'gpt-4',
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a company research expert. Provide accurate, factual information about companies in JSON format.'],
-                ['role' => 'user', 'content' => $prompt]
-            ],
-            'temperature' => 0.3,
-            'max_tokens' => 2000,
-        ]);
-
-        $content = $response->choices[0]->message->content;
+        $systemPrompt = 'You are a company research expert. Provide accurate, factual information about companies in JSON format.';
+        $content = $this->aiService->generateResponse($prompt, $systemPrompt);
         
         try {
             $data = json_decode($content, true);
@@ -155,17 +146,8 @@ Generate 8-10 compelling talking points that a job candidate could use in an int
 
 Return as a JSON array of strings.";
 
-        $response = OpenAI::chat()->create([
-            'model' => 'gpt-4',
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are an interview preparation expert helping candidates create compelling talking points about companies.'],
-                ['role' => 'user', 'content' => $prompt]
-            ],
-            'temperature' => 0.7,
-            'max_tokens' => 800,
-        ]);
-
-        $content = $response->choices[0]->message->content;
+        $systemPrompt = 'You are an interview preparation expert helping candidates create compelling talking points about companies.';
+        $content = $this->aiService->generateResponse($prompt, $systemPrompt);
         
         try {
             return json_decode($content, true) ?? [];
@@ -193,17 +175,8 @@ Generate 6-8 questions that interviewers from this company might ask candidates,
 
 Return as a JSON array of strings.";
 
-        $response = OpenAI::chat()->create([
-            'model' => 'gpt-4',
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are an interview expert who understands how different companies approach candidate evaluation.'],
-                ['role' => 'user', 'content' => $prompt]
-            ],
-            'temperature' => 0.7,
-            'max_tokens' => 600,
-        ]);
-
-        $content = $response->choices[0]->message->content;
+        $systemPrompt = 'You are an interview expert who understands how different companies approach candidate evaluation.';
+        $content = $this->aiService->generateResponse($prompt, $systemPrompt);
         
         try {
             return json_decode($content, true) ?? [];
@@ -233,17 +206,8 @@ Generate 5-7 compelling reasons why someone would want to work at this company. 
 
 Return as a JSON array of strings.";
 
-        $response = OpenAI::chat()->create([
-            'model' => 'gpt-4',
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a career advisor helping candidates understand the value proposition of working at different companies.'],
-                ['role' => 'user', 'content' => $prompt]
-            ],
-            'temperature' => 0.7,
-            'max_tokens' => 500,
-        ]);
-
-        $content = $response->choices[0]->message->content;
+        $systemPrompt = 'You are a career advisor helping candidates understand the value proposition of working at different companies.';
+        $content = $this->aiService->generateResponse($prompt, $systemPrompt);
         
         try {
             return json_decode($content, true) ?? [];
@@ -279,17 +243,8 @@ Return as a JSON array of strings.";
             
             Provide realistic data based on common job postings.";
 
-            $response = OpenAI::chat()->create([
-                'model' => 'gpt-4',
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are a job posting analysis expert. Extract key information from job postings and return structured data.'],
-                    ['role' => 'user', 'content' => $prompt]
-                ],
-                'temperature' => 0.3,
-                'max_tokens' => 1000,
-            ]);
-
-            $content = $response->choices[0]->message->content;
+            $systemPrompt = 'You are a job posting analysis expert. Extract key information from job postings and return structured data.';
+            $content = $this->aiService->generateResponse($prompt, $systemPrompt);
             
             try {
                 $data = json_decode($content, true);
