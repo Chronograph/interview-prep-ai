@@ -57,21 +57,16 @@ class PracticeSessions extends Component
     public function loadUpcomingInterviews()
     {
         $this->upcomingInterviews = Interview::where('user_id', Auth::id())
-            ->where('interview_date', '>=', now()->toDateString())
-            ->orderBy('interview_date')
-            ->orderBy('interview_time')
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now())
+            ->orderBy('started_at')
             ->get()
             ->map(function ($interview) {
                 return [
                     'id' => $interview->id,
-                    'company' => $interview->company,
-                    'role' => $interview->position,
-                    'date' => $interview->interview_date,
+                    'date' => $interview->started_at?->toDateString(),
                     'focus_areas' => $this->getFocusAreas($interview->interview_type),
-                    'readiness_score' => $interview->readiness_score ?? 0,
-                    'readiness_status' => $this->getReadinessStatus($interview->readiness_score ?? 0),
-                    'practice_status' => $this->getPracticeStatus($interview->readiness_score ?? 0),
-                    'company_initial' => strtoupper(substr($interview->company, 0, 1)),
+                    'practice_status' => $this->getPracticeStatus(0),
                 ];
             });
     }
@@ -120,16 +115,16 @@ class PracticeSessions extends Component
             ->where('created_at', '>=', now()->startOfWeek())
             ->count();
 
-        // Calculate interview ready count (interviews with readiness >= 80)
+        // Calculate interview ready count (interviews scheduled)
         $this->interviewReadyCount = Interview::where('user_id', $user->id)
-            ->where('interview_date', '>=', now()->toDateString())
-            ->where('readiness_score', '>=', 80)
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now())
             ->count();
 
-        // Calculate need practice count (interviews with readiness < 70)
+        // Calculate need practice count (interviews scheduled)
         $this->needPracticeCount = Interview::where('user_id', $user->id)
-            ->where('interview_date', '>=', now()->toDateString())
-            ->where('readiness_score', '<', 70)
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now())
             ->count();
 
         // Mock score improvement calculation

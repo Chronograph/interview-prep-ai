@@ -53,20 +53,24 @@ class DatabaseSeeder extends Seeder
                     $attempts = rand(1, 20);
                     $improvementRate = rand(-5, 15); // Can be negative for decline
 
-                    MasteryScore::create([
-                        'user_id' => $testUser->id,
-                        'topic' => $topic,
-                        'skill' => $skill,
-                        'score' => $score,
-                        'attempts' => $attempts,
-                        'improvement_rate' => $improvementRate,
-                        'last_practiced_at' => now()->subDays(rand(0, 30)),
-                        'performance_history' => json_encode([
-                            ['score' => rand(40, 80), 'date' => now()->subDays(30)->toDateString()],
-                            ['score' => rand(50, 85), 'date' => now()->subDays(15)->toDateString()],
-                            ['score' => $score, 'date' => now()->subDays(rand(0, 7))->toDateString()],
-                        ]),
-                    ]);
+                    MasteryScore::firstOrCreate(
+                        [
+                            'user_id' => $testUser->id,
+                            'topic' => $topic,
+                            'skill' => $skill,
+                        ],
+                        [
+                            'score' => $score,
+                            'attempts' => $attempts,
+                            'improvement_rate' => $improvementRate,
+                            'last_practiced_at' => now()->subDays(rand(0, 30)),
+                            'performance_history' => json_encode([
+                                ['score' => rand(40, 80), 'date' => now()->subDays(30)->toDateString()],
+                                ['score' => rand(50, 85), 'date' => now()->subDays(15)->toDateString()],
+                                ['score' => $score, 'date' => now()->subDays(rand(0, 7))->toDateString()],
+                            ]),
+                        ]
+                    );
                 }
             }
 
@@ -88,20 +92,24 @@ class DatabaseSeeder extends Seeder
                 $completionPercentage = rand(30, 95);
                 $averageScore = ($questionsAttempted > 0) ? ($questionsCorrect / $questionsAttempted) * 100 : 0;
 
-                TopicProgress::create([
-                    'user_id' => $testUser->id,
-                    'topic_name' => $topicName,
-                    'category' => $category,
-                    'difficulty_level' => $difficultyLevels[array_rand($difficultyLevels)],
-                    'completion_percentage' => $completionPercentage,
-                    'questions_attempted' => $questionsAttempted,
-                    'questions_correct' => $questionsCorrect,
-                    'average_score' => round($averageScore, 2),
-                    'time_spent_minutes' => rand(30, 300),
-                    'strengths' => json_encode(['Quick problem identification', 'Clear communication']),
-                    'weaknesses' => json_encode(['Time management', 'Edge case handling']),
-                    'last_practiced_at' => now()->subDays(rand(0, 20)),
-                ]);
+                TopicProgress::firstOrCreate(
+                    [
+                        'user_id' => $testUser->id,
+                        'topic_name' => $topicName,
+                    ],
+                    [
+                        'category' => $category,
+                        'difficulty_level' => $difficultyLevels[array_rand($difficultyLevels)],
+                        'completion_percentage' => $completionPercentage,
+                        'questions_attempted' => $questionsAttempted,
+                        'questions_correct' => $questionsCorrect,
+                        'average_score' => round($averageScore, 2),
+                        'time_spent_minutes' => rand(30, 300),
+                        'strengths' => json_encode(['Quick problem identification', 'Clear communication']),
+                        'weaknesses' => json_encode(['Time management', 'Edge case handling']),
+                        'last_practiced_at' => now()->subDays(rand(0, 20)),
+                    ]
+                );
             }
         }
 

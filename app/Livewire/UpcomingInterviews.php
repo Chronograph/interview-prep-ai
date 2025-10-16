@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Interview;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -19,32 +20,17 @@ class UpcomingInterviews extends Component
     // Form fields
     public $title = '';
 
-    public $company = '';
-
-    public $position = '';
-
     public $interview_date = '';
 
     public $interview_time = '';
 
-    public $interview_type = 'video';
-
-    public $location = '';
-
-    public $notes = '';
-
-    public $readiness_score = 0;
+    public $interview_type = 'mixed';
 
     protected $rules = [
         'title' => 'required|string|max:255',
-        'company' => 'required|string|max:255',
-        'position' => 'required|string|max:255',
         'interview_date' => 'required|date',
         'interview_time' => 'required',
         'interview_type' => 'required|in:behavioral,technical,mixed',
-        'location' => 'nullable|string|max:255',
-        'notes' => 'nullable|string',
-        'readiness_score' => 'required|integer|min:0|max:100',
     ];
 
     public function mount()
@@ -55,22 +41,17 @@ class UpcomingInterviews extends Component
     public function loadInterviews()
     {
         $this->interviews = Interview::where('user_id', Auth::id())
-            ->where('interview_date', '>=', now()->toDateString())
-            ->orderBy('interview_date')
-            ->orderBy('interview_time')
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now())
+            ->orderBy('started_at')
             ->get()
             ->map(function ($interview) {
                 return [
                     'id' => $interview->id,
                     'title' => $interview->title,
-                    'company' => $interview->company,
-                    'position' => $interview->position,
-                    'interview_date' => $interview->interview_date,
-                    'interview_time' => $interview->interview_time,
+                    'interview_date' => $interview->started_at?->toDateString(),
+                    'interview_time' => $interview->started_at?->format('H:i:s'),
                     'interview_type' => $interview->interview_type,
-                    'location' => $interview->location,
-                    'notes' => $interview->notes,
-                    'readiness_score' => $interview->readiness_score,
                     'status' => $interview->status,
                     'created_at' => $interview->created_at,
                 ];
@@ -95,14 +76,9 @@ class UpcomingInterviews extends Component
 
         $this->editingInterview = $interview;
         $this->title = $interview->title;
-        $this->company = $interview->company;
-        $this->position = $interview->position;
-        $this->interview_date = $interview->interview_date;
-        $this->interview_time = $interview->interview_time;
+        $this->interview_date = $interview->started_at?->toDateString() ?? '';
+        $this->interview_time = $interview->started_at?->format('H:i') ?? '';
         $this->interview_type = $interview->interview_type;
-        $this->location = $interview->location;
-        $this->notes = $interview->notes;
-        $this->readiness_score = $interview->readiness_score;
 
         $this->showEditModal = true;
     }
@@ -118,17 +94,13 @@ class UpcomingInterviews extends Component
     {
         $this->validate();
 
+        $startedAt = Carbon::parse($this->interview_date.' '.$this->interview_time);
+
         Interview::create([
             'user_id' => Auth::id(),
             'title' => $this->title,
-            'company' => $this->company,
-            'position' => $this->position,
-            'interview_date' => $this->interview_date,
-            'interview_time' => $this->interview_time,
             'interview_type' => $this->interview_type,
-            'location' => $this->location,
-            'notes' => $this->notes,
-            'readiness_score' => $this->readiness_score,
+            'started_at' => $startedAt,
             'status' => 'pending',
         ]);
 
@@ -142,16 +114,12 @@ class UpcomingInterviews extends Component
     {
         $this->validate();
 
+        $startedAt = Carbon::parse($this->interview_date.' '.$this->interview_time);
+
         $this->editingInterview->update([
             'title' => $this->title,
-            'company' => $this->company,
-            'position' => $this->position,
-            'interview_date' => $this->interview_date,
-            'interview_time' => $this->interview_time,
             'interview_type' => $this->interview_type,
-            'location' => $this->location,
-            'notes' => $this->notes,
-            'readiness_score' => $this->readiness_score,
+            'started_at' => $startedAt,
         ]);
 
         $this->loadInterviews();
@@ -178,14 +146,9 @@ class UpcomingInterviews extends Component
     private function resetForm()
     {
         $this->title = '';
-        $this->company = '';
-        $this->position = '';
         $this->interview_date = '';
         $this->interview_time = '';
         $this->interview_type = 'mixed';
-        $this->location = '';
-        $this->notes = '';
-        $this->readiness_score = 0;
     }
 
     public function render()

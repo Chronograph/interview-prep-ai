@@ -136,7 +136,8 @@ class ApplicationManager extends Component
 
         // Upcoming interviews count
         $this->upcomingInterviewsCount = \App\Models\Interview::where('user_id', Auth::id())
-            ->where('interview_date', '>=', now()->toDateString())
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now())
             ->count();
 
         // Interview ready (placeholder calculation)
@@ -333,21 +334,17 @@ class ApplicationManager extends Component
     public function loadUpcomingInterviews()
     {
         $this->upcomingInterviews = \App\Models\Interview::where('user_id', Auth::id())
-            ->where('interview_date', '>=', now()->toDateString())
-            ->orderBy('interview_date')
-            ->orderBy('interview_time')
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now())
+            ->orderBy('started_at')
             ->get()
             ->map(function ($interview) {
                 return [
                     'id' => $interview->id,
                     'title' => $interview->title,
-                    'company' => $interview->company,
-                    'position' => $interview->position,
-                    'interview_date' => $interview->interview_date,
-                    'interview_time' => $interview->interview_time,
+                    'interview_date' => $interview->started_at?->toDateString(),
+                    'interview_time' => $interview->started_at?->format('H:i:s'),
                     'interview_type' => $interview->interview_type,
-                    'location' => $interview->location,
-                    'readiness_score' => $interview->readiness_score ?? 0,
                     'status' => $interview->status,
                 ];
             });
