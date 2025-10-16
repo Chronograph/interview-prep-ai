@@ -6,9 +6,11 @@ use App\Models\Interview;
 use App\Models\InterviewSession;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
+#[Title('Interview Sessions')]
 class PracticeSessions extends Component
 {
     public $activeTab = 'upcoming_interviews';
