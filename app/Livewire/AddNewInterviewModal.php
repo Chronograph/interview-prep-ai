@@ -93,6 +93,11 @@ class AddNewInterviewModal extends Component
 
     public function analyzeJobPosting()
     {
+        \Log::info('Analyze button clicked', [
+            'url' => $this->jobPostingUrl,
+            'user_id' => Auth::id()
+        ]);
+
         if (empty($this->jobPostingUrl)) {
             session()->flash('error', 'Please enter a job posting URL');
             return;
@@ -101,15 +106,27 @@ class AddNewInterviewModal extends Component
         $this->analyzingJob = true;
         
         try {
+            \Log::info('Starting job analysis', ['url' => $this->jobPostingUrl]);
+            
             // Analyze the job posting using AI
             $this->jobAnalysis = $this->companyService->analyzeJobPosting($this->jobPostingUrl);
+            
+            \Log::info('Job analysis completed', ['analysis' => $this->jobAnalysis]);
             
             // Calculate resume matches
             $this->calculateResumeMatches();
             
+            \Log::info('Resume matches calculated', ['matches_count' => count($this->resumeMatches)]);
+            
             session()->flash('success', 'Job posting analyzed successfully!');
             
         } catch (\Exception $e) {
+            \Log::error('Job analysis failed', [
+                'url' => $this->jobPostingUrl,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             session()->flash('error', 'Failed to analyze job posting: ' . $e->getMessage());
         } finally {
             $this->analyzingJob = false;

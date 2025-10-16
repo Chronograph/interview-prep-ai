@@ -222,6 +222,14 @@ Return as a JSON array of strings.";
 
     public function analyzeJobPosting(string $url): array
     {
+        // Always use fallback for now since AI service is not available
+        Log::info('Using fallback job analysis (AI service unavailable)', [
+            'url' => $url
+        ]);
+        
+        return $this->getFallbackJobAnalysis($url);
+        
+        /* AI Service temporarily disabled - uncomment when LM Studio is running
         try {
             // Try to use AI service first
             $prompt = "Analyze this job posting URL and extract key information: {$url}
@@ -270,6 +278,7 @@ Return as a JSON array of strings.";
             
             return $this->getFallbackJobAnalysis($url);
         }
+        */
     }
 
     private function getFallbackJobAnalysis(string $url): array
