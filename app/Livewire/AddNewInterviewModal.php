@@ -118,6 +118,9 @@ class AddNewInterviewModal extends Component
             
             \Log::info('Resume matches calculated', ['matches_count' => count($this->resumeMatches)]);
             
+            // Force Livewire to update the UI
+            $this->dispatch('$refresh');
+            
             session()->flash('success', 'Job posting analyzed successfully!');
             
         } catch (\Exception $e) {
@@ -135,17 +138,41 @@ class AddNewInterviewModal extends Component
 
     public function calculateResumeMatches()
     {
+        \Log::info('Calculating resume matches', [
+            'job_analysis_exists' => !empty($this->jobAnalysis),
+            'user_resumes_count' => count($this->userResumes),
+            'user_resumes' => $this->userResumes
+        ]);
+
         if (!$this->jobAnalysis) {
+            \Log::warning('No job analysis available for resume matching');
+            return;
+        }
+
+        if (empty($this->userResumes)) {
+            \Log::warning('No user resumes available for matching');
             return;
         }
 
         $jobSkills = $this->jobAnalysis['skills'] ?? [];
         $jobRequirements = $this->jobAnalysis['requirements'] ?? [];
         
+        \Log::info('Job skills and requirements', [
+            'job_skills' => $jobSkills,
+            'job_requirements' => $jobRequirements
+        ]);
+        
         $this->resumeMatches = collect($this->userResumes)->map(function ($resume) use ($jobSkills, $jobRequirements) {
             $matchScore = $this->calculateMatchScore($resume, $jobSkills, $jobRequirements);
             $matchLevel = $this->getMatchLevel($matchScore);
             $matchingKeywords = $this->getMatchingKeywords($resume, $jobSkills, $jobRequirements);
+            
+            \Log::info('Resume match calculated', [
+                'resume_id' => $resume['id'],
+                'match_score' => $matchScore,
+                'match_level' => $matchLevel,
+                'matching_keywords' => $matchingKeywords
+            ]);
             
             return [
                 'resume' => $resume,
@@ -154,6 +181,11 @@ class AddNewInterviewModal extends Component
                 'matching_keywords' => $matchingKeywords,
             ];
         })->sortByDesc('match_score')->values()->toArray();
+        
+        \Log::info('Resume matches completed', [
+            'matches_count' => count($this->resumeMatches),
+            'matches' => $this->resumeMatches
+        ]);
     }
 
     private function calculateMatchScore($resume, $jobSkills, $jobRequirements): int
