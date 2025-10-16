@@ -54,8 +54,6 @@ class InterviewSessionManager extends Component
     // Data for dropdowns
     public $jobPostings = [];
 
-    public $aiPersonas = [];
-
     protected InterviewPracticeService $practiceService;
 
     protected AIService $aiService;
@@ -81,11 +79,6 @@ class InterviewSessionManager extends Component
             ->get()
             ->toArray();
 
-        $this->aiPersonas = AiPersona::active()
-            ->select('id', 'name', 'interview_style', 'difficulty_level', 'department')
-            ->orderBy('name')
-            ->get()
-            ->toArray();
 
         $this->sessions = $user->interviewSessions()
             ->with(['jobPosting:id,title,company', 'aiPersona:id,name,interview_style'])
@@ -101,7 +94,7 @@ class InterviewSessionManager extends Component
             'focus_area' => 'required|string|max:255',
             'difficulty' => 'required|in:beginner,intermediate,advanced',
             'job_posting_id' => 'nullable|exists:job_postings,id',
-            'ai_persona_id' => 'required|exists:ai_personas,id',
+            'ai_persona_id' => 'nullable|exists:ai_personas,id',
         ]);
 
         try {

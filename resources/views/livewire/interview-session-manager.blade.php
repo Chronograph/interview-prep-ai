@@ -50,17 +50,6 @@
                             </select>
                         </div>
 
-                        <!-- AI Persona -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">AI Interviewer</label>
-                            <select wire:model="ai_persona_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
-                                <option value="">Select an AI interviewer</option>
-                                @foreach($aiPersonas as $persona)
-                                    <option value="{{ $persona['id'] }}">{{ $persona['name'] }} - {{ ucfirst($persona['interview_style']) }}</option>
-                                @endforeach
-                            </select>
-                            @error('ai_persona_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                        </div>
 
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
                             Start Mock Interview

@@ -118,22 +118,6 @@
                         </div>
                         @endif
 
-                        <!-- AI Persona Selection -->
-                        @if(count($aiPersonas) > 0)
-                        <div class="space-y-4">
-                            <label class="block text-lg font-bold text-gray-900 dark:text-gray-100">AI Interviewer</label>
-                            <select
-                                name="ai_persona_id"
-                                required
-                                class="w-full px-4 py-3 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300"
-                            >
-                                <option value="">Select an AI interviewer</option>
-                                @foreach($aiPersonas as $persona)
-                                    <option value="{{ $persona->id }}">{{ $persona->name }} - {{ $persona->interview_style }} ({{ ucfirst($persona->difficulty_level) }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        @endif
                     </form>
                 </div>
             </div>
