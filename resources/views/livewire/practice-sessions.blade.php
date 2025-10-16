@@ -379,7 +379,7 @@
                             </div>
 
                             <!-- Card 3: Add a New Job Interview -->
-                            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" wire:click="openSessionTypeModal('company-specific')">
+                            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" wire:click="$dispatch('open-add-interview-modal')">
                                 <div class="flex items-start justify-between mb-4">
                                     <div>
                                         <h4 class="text-lg font-bold text-gray-900 mb-2">Add a New Job Interview</h4>
@@ -513,4 +513,7 @@
             </div>
         </div>
     @endif
+
+    <!-- Include the Add New Interview Modal -->
+    @livewire('add-new-interview-modal')
 </div>
