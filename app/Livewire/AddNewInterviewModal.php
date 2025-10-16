@@ -340,7 +340,7 @@ class AddNewInterviewModal extends Component
         $resume = Resume::create([
             'user_id' => Auth::id(),
             'title' => pathinfo($filename, PATHINFO_FILENAME),
-            'file_path' => $file->store('resumes', 'private'),
+            'file_path' => $file->store('resumes', 'public'),
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
             'raw_content' => $content,
