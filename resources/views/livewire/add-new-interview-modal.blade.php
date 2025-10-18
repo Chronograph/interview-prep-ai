@@ -212,10 +212,13 @@
                     Cancel
                 </button>
                 <button 
-                    wire:click="startInterviewPractice"
-                    class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+                    wire:click.prevent="startInterviewPractice"
+                    wire:loading.attr="disabled"
+                    wire:target="startInterviewPractice"
+                    class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Start Interview Practice
+                    <span wire:loading.remove wire:target="startInterviewPractice">Start Interview Practice</span>
+                    <span wire:loading wire:target="startInterviewPractice">Starting...</span>
                 </button>
             </div>
         </div>

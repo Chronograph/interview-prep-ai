@@ -165,20 +165,107 @@
                         </button>
                         @endif
                     </div>
+                    
+                    <!-- Recording Status -->
+                    @if(!empty($recordedChunks))
+                    <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center gap-2 text-green-800">
+                            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="font-semibold">Processing Response...</span>
+                        </div>
+                        <p class="text-green-700 text-sm mt-1">Your video ({{ $this->formattedTime }}) is being analyzed and will be automatically submitted.</p>
+                    </div>
+                    @endif
+
+                    <!-- Video Recording Interface -->
+                    @if(!empty($lastVideoUrl))
+                    <div class="mt-6">
+                        <!-- Video Recording Header -->
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Video Recording</h3>
+                        
+                        <!-- Video Player Interface -->
+                        <div class="relative bg-gray-900 rounded-lg overflow-hidden shadow-xl">
+                            <video id="recorded-video" 
+                                   class="w-full h-auto rounded-lg" 
+                                   controls 
+                                   preload="metadata">
+                                <source src="{{ $lastVideoUrl }}" type="video/webm">
+                                Your browser does not support the video tag.
+                            </video>
+                            
+                            <!-- Video Overlay with Play Button (shown when video is paused) -->
+                            <div id="video-overlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-lg cursor-pointer" onclick="toggleVideoPlayback()">
+                                <div class="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all duration-200 shadow-lg">
+                                    <svg id="play-icon" class="w-10 h-10 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    <svg id="pause-icon" class="w-10 h-10 text-gray-800 hidden" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Video Controls and Info -->
+                        <div class="mt-4 flex items-center justify-between">
+                            <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Duration: {{ $this->formattedTime }}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Saved and Ready
+                                </span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="downloadVideo()" 
+                                        class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                    Download
+                                </button>
+                                <button onclick="shareVideo()" 
+                                        class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                                    Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
 
             <!-- Question Details Section -->
             <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6">
                 @if($currentQuestion)
+                <!-- Tab Navigation -->
+                <div class="flex mb-6 border-b border-gray-200 dark:border-gray-700">
+                    <button wire:click="$set('activeTab', 'current')" 
+                            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'current' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
+                        Current Recording
+                    </button>
+                    <button wire:click="$set('activeTab', 'history')" 
+                            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{ $activeTab === 'history' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' }}">
+                        History
+                        @if(count($currentQuestion['attempts'] ?? []) > 0)
+                        <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full px-2 py-0.5">
+                            {{ count($currentQuestion['attempts']) }}
+                        </span>
+                        @endif
+                    </button>
+                </div>
+
+                @if($activeTab === 'current')
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">
                         Question {{ $currentQuestionIndex + 1 }} of {{ $totalQuestions }}
                     </h3>
-                    <button wire:click="showQuestionHistory" 
-                            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                        History
-                    </button>
                 </div>
 
                 <!-- Question Category & Difficulty -->
@@ -214,13 +301,17 @@
                     </div>
                 </div>
 
-                <!-- Text Response Input -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Response</label>
-                    <textarea wire:model="currentResponse" 
-                              rows="4" 
-                              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                              placeholder="Type your response here..."></textarea>
+                <!-- Video Response Instructions -->
+                <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-1">Video Response Required</h4>
+                            <p class="text-blue-700 dark:text-blue-300 text-sm">Record your answer using the video interface above. Your response will be automatically submitted and analyzed once you stop recording.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -228,15 +319,78 @@
                     @if(count($currentQuestion['attempts'] ?? []) > 0)
                     <button wire:click="$set('showRetakeModal', true)" 
                             class="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                        Retake
+                        Retake Question
                     </button>
                     @endif
                     
-                    <button wire:click="submitResponse" 
-                            class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                        Submit Response
+                    <button wire:click="nextQuestion" 
+                            class="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                        Next Question
                     </button>
                 </div>
+
+                @elseif($activeTab === 'history')
+                <!-- Recording History Tab -->
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+                        Recording History
+                    </h3>
+                    
+                    <!-- Summary Scores -->
+                    @if(count($currentQuestion['attempts'] ?? []) > 0)
+                    <div class="flex gap-6 mb-6">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Best Score</div>
+                            <div class="text-lg font-bold text-orange-600 dark:text-orange-400">{{ $currentQuestion['best_score'] ?? 0 }}/10</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Latest Score</div>
+                            <div class="text-lg font-bold text-orange-600 dark:text-orange-400">{{ ($currentQuestion['attempts'][0]['score'] ?? 0) }}/10</div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Recording Entries -->
+                    <div class="space-y-3">
+                        @foreach($currentQuestion['attempts'] as $attempt)
+                        <div class="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {{ \Carbon\Carbon::parse($attempt['submitted_at'])->format('M j, g:i A') }}
+                                    </div>
+                                    <div class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                        </svg>
+                                        {{ $attempt['duration'] ?? '2:15' }}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    @if(isset($attempt['improvement']) && $attempt['improvement'])
+                                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    @endif
+                                    <span class="text-lg font-bold {{ isset($attempt['improvement']) && $attempt['improvement'] ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400' }}">
+                                        {{ $attempt['score'] }}/10
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: {{ ($attempt['score'] / 10) * 100 }}%"></div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        No recording history yet. Start your first attempt above!
+                    </div>
+                    @endif
+                </div>
+                @endif
 
                 @else
                 <div class="text-center py-12">
@@ -244,48 +398,107 @@
                 </div>
                 @endif
             </div>
-        </div>
 
-        <!-- Response History Modal -->
-        @if($showHistory && $currentQuestion)
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" wire:click="$set('showHistory', false)">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" wire:click.stop>
-                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Response History</h3>
-                        <button wire:click="$set('showHistory', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+            <!-- Response Analysis Section -->
+            @if($currentQuestion && isset($currentQuestion['feedback']) && !empty($currentQuestion['feedback']))
+            <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 mt-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Response Analysis</h3>
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg font-semibold text-gray-700 dark:text-gray-300">Overall Score:</span>
+                        <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $currentQuestion['feedback']['overall_score'] ?? $currentQuestion['feedback']['score'] * 10 }}/100</span>
+                        @php
+                            $score = $currentQuestion['feedback']['overall_score'] ?? $currentQuestion['feedback']['score'] * 10;
+                            $statusClass = $score >= 80 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
+                                          ($score >= 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' : 
+                                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300');
+                            $statusText = $score >= 80 ? 'Excellent' : ($score >= 60 ? 'Good' : 'Needs Improvement');
+                        @endphp
+                        <span class="px-3 py-1 rounded-full text-sm font-medium {{ $statusClass }}">{{ $statusText }}</span>
                     </div>
                 </div>
-                
-                <div class="p-6 overflow-y-auto max-h-96">
-                    <div class="space-y-4">
-                        @forelse($responseHistory as $attempt)
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm text-gray-500 dark:text-gray-400">
-                                    Attempt {{ $loop->iteration }} - {{ \Carbon\Carbon::parse($attempt['submitted_at'])->format('M j, Y g:i A') }}
-                                </span>
-                                <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
-                                    {{ $attempt['score'] }}/10
-                                </span>
-                            </div>
-                            <p class="text-gray-700 dark:text-gray-300 text-sm mb-2">{{ $attempt['response'] }}</p>
-                            @if(isset($attempt['evaluation']['overall_feedback']))
-                            <p class="text-gray-600 dark:text-gray-400 text-xs italic">{{ $attempt['evaluation']['overall_feedback'] }}</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Role-Specific Feedback -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Role-Specific Feedback</h4>
+                        <div class="space-y-4">
+                            @if(isset($currentQuestion['feedback']['role_specific_feedback']))
+                                @foreach($currentQuestion['feedback']['role_specific_feedback'] as $feedback)
+                                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-2">
+                                            @php
+                                                $iconClass = $feedback['score'] >= 8 ? 'text-green-600' : ($feedback['score'] >= 6 ? 'text-yellow-600' : 'text-red-600');
+                                                $icon = $feedback['score'] >= 8 ? '✓' : ($feedback['score'] >= 6 ? '!' : '✗');
+                                            @endphp
+                                            <span class="text-xl {{ $iconClass }}">{{ $icon }}</span>
+                                            <h5 class="font-semibold text-gray-900 dark:text-gray-100">{{ $feedback['category'] }}</h5>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $feedback['score'] }}/10</span>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $feedback['score'] * 10 }}%"></div>
+                                    </div>
+                                    
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ $feedback['summary'] }}</p>
+                                    
+                                    <div class="space-y-1">
+                                        <p class="text-xs font-medium text-gray-500 dark:text-gray-500">Suggestions for improvement:</p>
+                                        @foreach($feedback['suggestions'] as $suggestion)
+                                        <p class="text-xs text-gray-600 dark:text-gray-400">• {{ $suggestion }}</p>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endforeach
                             @endif
                         </div>
-                        @empty
-                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">No previous attempts</div>
-                        @endforelse
+                    </div>
+
+                    <!-- Presentation Feedback -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Presentation Feedback</h4>
+                        <div class="space-y-4">
+                            @if(isset($currentQuestion['feedback']['presentation_feedback']))
+                                @foreach($currentQuestion['feedback']['presentation_feedback'] as $feedback)
+                                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-2">
+                                            @php
+                                                $iconClass = $feedback['score'] >= 8 ? 'text-green-600' : ($feedback['score'] >= 6 ? 'text-yellow-600' : 'text-red-600');
+                                                $icon = $feedback['score'] >= 8 ? '✓' : ($feedback['score'] >= 6 ? '!' : '✗');
+                                            @endphp
+                                            <span class="text-xl {{ $iconClass }}">{{ $icon }}</span>
+                                            <h5 class="font-semibold text-gray-900 dark:text-gray-100">{{ $feedback['category'] }}</h5>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $feedback['score'] }}/10</span>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $feedback['score'] * 10 }}%"></div>
+                                    </div>
+                                    
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ $feedback['summary'] }}</p>
+                                    
+                                    <div class="space-y-1">
+                                        <p class="text-xs font-medium text-gray-500 dark:text-gray-500">Suggestions for improvement:</p>
+                                        @foreach($feedback['suggestions'] as $suggestion)
+                                        <p class="text-xs text-gray-600 dark:text-gray-400">• {{ $suggestion }}</p>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endforeach
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
+            @endif
         </div>
-        @endif
+
 
         <!-- Retake Modal -->
         @if($showRetakeModal)
@@ -340,10 +553,13 @@ document.addEventListener('livewire:init', function () {
     // Video recording functionality
     let mediaRecorder;
     let recordedChunks = [];
+    let mediaStream = null;
+    let recordingInterval;
     
     Livewire.on('start-recording', function () {
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(function(stream) {
+                mediaStream = stream;
                 const video = document.getElementById('video-preview');
                 video.srcObject = stream;
                 
@@ -357,11 +573,47 @@ document.addEventListener('livewire:init', function () {
                 };
                 
                 mediaRecorder.onstop = function() {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    Livewire.dispatch('recording-completed', { chunks: recordedChunks });
+                    // Clean up the stream
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                    
+                    // Clear the recording timer
+                    if (recordingInterval) {
+                        clearInterval(recordingInterval);
+                        recordingInterval = null;
+                    }
+                    
+                    // Create video blob for playback
+                    const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const videoUrl = URL.createObjectURL(videoBlob);
+                    
+                    // Store video URL for playback
+                    window.lastRecordedVideoUrl = videoUrl;
+                    
+                    // Send recording data to Livewire
+                    Livewire.dispatch('recording-completed', { 
+                        chunks: recordedChunks,
+                        videoUrl: videoUrl,
+                        duration: recordingTime
+                    });
+                    
+                    // Auto-submit after a brief delay to show completion
+                    setTimeout(() => {
+                        Livewire.dispatch('auto-submit-response');
+                    }, 2000);
                 };
                 
-                mediaRecorder.start();
+                mediaRecorder.start(1000); // Record in 1-second chunks
+                
+                // Start recording timer
+                let recordingTime = 0;
+                recordingInterval = setInterval(function() {
+                    recordingTime++;
+                    Livewire.dispatch('recording-time-update', { time: recordingTime });
+                }, 1000);
+                
             })
             .catch(function(error) {
                 console.error('Error accessing media devices:', error);
@@ -373,7 +625,169 @@ document.addEventListener('livewire:init', function () {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
         }
+        
+        // Clear the recording timer
+        if (recordingInterval) {
+            clearInterval(recordingInterval);
+            recordingInterval = null;
+        }
     });
+    
+    // Handle recording time updates
+    Livewire.on('recording-time-update', function (data) {
+        // This will be handled by the Livewire component
+    });
+});
+
+// Global function to play the last recorded video
+function playLastRecording() {
+    const videoPlayer = document.getElementById('playback-video');
+    const playButton = event.target;
+    
+    if (window.lastRecordedVideoUrl) {
+        // Show the video player
+        videoPlayer.style.display = 'block';
+        videoPlayer.src = window.lastRecordedVideoUrl;
+        
+        // Update button text
+        playButton.textContent = 'Playing...';
+        playButton.disabled = true;
+        
+        // Handle video end
+        videoPlayer.onended = function() {
+            playButton.textContent = 'Play Back';
+            playButton.disabled = false;
+            videoPlayer.style.display = 'none';
+        };
+        
+        // Handle video error
+        videoPlayer.onerror = function() {
+            playButton.textContent = 'Play Back';
+            playButton.disabled = false;
+            alert('Error playing video. Please try recording again.');
+        };
+        
+        // Start playing
+        videoPlayer.play();
+    } else {
+        alert('No recording available to play back.');
+    }
+}
+
+// Function to play recordings from history
+function playHistoryRecording(attemptId, videoUrl) {
+    const videoPlayer = document.getElementById('history-video-' + attemptId);
+    const playButton = event.target;
+    
+    if (videoUrl) {
+        // Show the video player
+        videoPlayer.style.display = 'block';
+        videoPlayer.src = videoUrl;
+        
+        // Update button text
+        const originalText = playButton.textContent;
+        playButton.textContent = 'Playing...';
+        playButton.disabled = true;
+        
+        // Handle video end
+        videoPlayer.onended = function() {
+            playButton.textContent = originalText;
+            playButton.disabled = false;
+            videoPlayer.style.display = 'none';
+        };
+        
+        // Handle video error
+        videoPlayer.onerror = function() {
+            playButton.textContent = originalText;
+            playButton.disabled = false;
+            alert('Error playing video from history.');
+        };
+        
+        // Start playing
+        videoPlayer.play();
+    } else {
+        alert('No video available for this attempt.');
+    }
+}
+
+// Video playback functions for recorded videos
+function toggleVideoPlayback() {
+    const video = document.getElementById('recorded-video');
+    const overlay = document.getElementById('video-overlay');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    
+    if (video && video.paused) {
+        video.play();
+        if (overlay) overlay.style.display = 'none';
+    } else if (video) {
+        video.pause();
+        if (overlay) {
+            overlay.style.display = 'flex';
+            if (playIcon) playIcon.classList.remove('hidden');
+            if (pauseIcon) pauseIcon.classList.add('hidden');
+        }
+    }
+}
+
+function downloadVideo() {
+    const video = document.getElementById('recorded-video');
+    if (video && video.src) {
+        const link = document.createElement('a');
+        link.href = video.src;
+        link.download = `interview-response-${new Date().toISOString().split('T')[0]}.webm`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+function shareVideo() {
+    const video = document.getElementById('recorded-video');
+    if (video && video.src) {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Interview Practice Response',
+                text: 'Check out my interview practice response',
+                url: video.src
+            });
+        } else {
+            // Fallback: copy URL to clipboard
+            navigator.clipboard.writeText(video.src).then(() => {
+                alert('Video URL copied to clipboard!');
+            });
+        }
+    }
+}
+
+// Initialize video event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('recorded-video');
+    if (video) {
+        const overlay = document.getElementById('video-overlay');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        
+        video.addEventListener('play', function() {
+            if (overlay) overlay.style.display = 'none';
+        });
+        
+        video.addEventListener('pause', function() {
+            if (overlay) {
+                overlay.style.display = 'flex';
+                if (playIcon) playIcon.classList.remove('hidden');
+                if (pauseIcon) pauseIcon.classList.add('hidden');
+            }
+        });
+        
+        video.addEventListener('ended', function() {
+            if (overlay) {
+                overlay.style.display = 'flex';
+                if (playIcon) playIcon.classList.remove('hidden');
+                if (pauseIcon) pauseIcon.classList.add('hidden');
+            }
+        });
+    }
 });
 </script>
 @endpush

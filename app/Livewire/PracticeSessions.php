@@ -82,15 +82,36 @@ class PracticeSessions extends Component
             ->limit(10)
             ->get()
             ->map(function ($session) {
+                // Get company and role information from job posting or session config
+                $company = 'Practice Session';
+                $role = 'General Practice';
+                
+                if ($session->jobPosting) {
+                    $company = $session->jobPosting->company;
+                    $role = $session->jobPosting->title;
+                } elseif ($session->session_config) {
+                    // Check if job posting info is stored in session_config
+                    $config = is_string($session->session_config) ? json_decode($session->session_config, true) : $session->session_config;
+                    
+                    if (isset($config['job_posting'])) {
+                        $company = $config['job_posting']['company'] ?? $company;
+                        $role = $config['job_posting']['title'] ?? $role;
+                    } elseif (isset($config['company'])) {
+                        $company = $config['company'];
+                    } elseif (isset($config['role'])) {
+                        $role = $config['role'];
+                    }
+                }
+                
                 return [
                     'id' => $session->id,
-                    'company' => $session->jobPosting?->company ?? 'Practice Session',
-                    'role' => $session->jobPosting?->title ?? 'General Practice',
+                    'company' => $company,
+                    'role' => $role,
                     'date' => $session->created_at->format('M j, Y'),
                     'difficulty' => ucfirst($session->difficulty_level ?? 'medium'),
                     'score' => $session->overall_score ?? 0,
                     'status' => $session->status,
-                    'company_initial' => strtoupper(substr($session->jobPosting?->company ?? 'P', 0, 1)),
+                    'company_initial' => strtoupper(substr($company, 0, 1)),
                 ];
             });
     }

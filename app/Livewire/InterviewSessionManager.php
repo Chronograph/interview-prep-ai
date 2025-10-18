@@ -68,6 +68,15 @@ class InterviewSessionManager extends Component
 
     public function mount($job_posting_id = null, $resume_id = null, $session_type = null, $difficulty = null, $questions_count = null)
     {
+        // Extract parameters from request (Livewire doesn't auto-map URL params to method params)
+        $request = request();
+        $job_posting_id = $job_posting_id ?: $request->get('job_posting_id');
+        $resume_id = $resume_id ?: $request->get('resume_id');
+        $session_type = $session_type ?: $request->get('session_type');
+        $difficulty = $difficulty ?: $request->get('difficulty');
+        $questions_count = $questions_count ?: $request->get('questions_count');
+        
+        
         // Auto-populate form fields from URL parameters
         if ($job_posting_id) {
             $this->job_posting_id = $job_posting_id;
@@ -114,12 +123,25 @@ class InterviewSessionManager extends Component
                // Set a longer timeout for testing (5 minutes)
                set_time_limit(300);
                
-               $this->validate([
-                   'session_type' => 'required|in:behavioral,technical,case_study',
-                   'difficulty' => 'required|in:easy,medium,hard',
-                   'job_posting_id' => 'nullable|exists:job_postings,id',
-                   'ai_persona_id' => 'nullable|exists:ai_personas,id',
-               ]);
+               try {
+                   $this->validate([
+                       'session_type' => 'required|in:behavioral,technical,case_study,company_specific',
+                       'difficulty' => 'required|in:easy,medium,hard',
+                       'job_posting_id' => 'nullable|exists:job_postings,id',
+                       'ai_persona_id' => 'nullable|exists:ai_personas,id',
+                   ]);
+               } catch (\Illuminate\Validation\ValidationException $e) {
+                   Log::error('Validation failed in startSession', [
+                       'errors' => $e->errors(),
+                       'current_values' => [
+                           'session_type' => $this->session_type,
+                           'difficulty' => $this->difficulty,
+                           'job_posting_id' => $this->job_posting_id,
+                           'ai_persona_id' => $this->ai_persona_id,
+                       ]
+                   ]);
+                   throw $e;
+               }
 
                try {
                    // Simplified session creation to avoid database timeout issues
@@ -131,6 +153,22 @@ class InterviewSessionManager extends Component
                    
                    Log::info('About to create session record');
 
+                   // Get job posting information if available
+                   $jobPosting = null;
+                   $sessionConfig = [];
+                   
+                   if ($this->job_posting_id) {
+                       $jobPosting = JobPosting::find($this->job_posting_id);
+                       if ($jobPosting) {
+                           $sessionConfig['job_posting'] = [
+                               'id' => $jobPosting->id,
+                               'company' => $jobPosting->company,
+                               'title' => $jobPosting->title,
+                               'description' => $jobPosting->description,
+                           ];
+                       }
+                   }
+                   
                    // Create session with job posting information
                    $session = InterviewSession::create([
                        'user_id' => Auth::id(),
@@ -140,6 +178,7 @@ class InterviewSessionManager extends Component
                        'is_practice' => true, // Mark as practice session
                        'status' => 'active',
                        'started_at' => now(),
+                       'session_config' => $sessionConfig,
                    ]);
                    
                    Log::info('Session created successfully', [

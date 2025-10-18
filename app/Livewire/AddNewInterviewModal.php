@@ -419,22 +419,18 @@ class AddNewInterviewModal extends Component
 
             Log::info('Resume obtained', ['resume_id' => $resume->id]);
 
-            // Create interview session
-            $sessionConfig = [
-                'session_type' => 'company_specific',
-                'focus_area' => 'company_research',
-                'difficulty' => 'hard',
-                'questions_count' => 15,
+            Log::info('Redirecting to interview session creation', [
                 'job_posting_id' => $jobPosting->id,
-                'resume_id' => $resume->id,
-            ];
-
-            Log::info('Redirecting to interview session creation', $sessionConfig);
+                'session_type' => 'company_specific',
+                'difficulty' => 'hard'
+            ]);
 
             // Close modal and redirect to interview session creation
             $this->closeModal();
 
-            return redirect()->route('interview-sessions.create', $sessionConfig);
+            return redirect()->route('interview-sessions.create', [
+                'job_posting_id' => $jobPosting->id
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Failed to start interview practice', [
