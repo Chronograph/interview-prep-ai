@@ -77,8 +77,9 @@ return [
     */
 
     'request_options' => [
-        'timeout' => env('PRISM_REQUEST_TIMEOUT', 30), // Reduced timeout for web APIs
+        'timeout' => env('PRISM_REQUEST_TIMEOUT', 60), // Increased timeout for web APIs
         'max_tokens' => env('PRISM_MAX_TOKENS', 2000),
         'temperature' => env('PRISM_TEMPERATURE', 0.7),
+        'connect_timeout' => env('PRISM_CONNECT_TIMEOUT', 10), // Connection timeout
     ],
 ];

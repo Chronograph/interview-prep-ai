@@ -20,30 +20,30 @@ class AIService
 
     public function __construct()
     {
-        $providerName = config('prism.default_provider', 'openai'); // Changed default to OpenAI
+        $providerName = config('prism.default_provider', 'anthropic'); // Default to Anthropic
         $this->provider = match ($providerName) {
             'openai' => Provider::OpenAI,
             'anthropic' => Provider::Anthropic,
             'ollama' => Provider::Ollama,
             'lmstudio' => Provider::OpenAI, // LM Studio uses OpenAI-compatible API
-            default => Provider::OpenAI
+            default => Provider::Anthropic // Default to Anthropic
         };
 
-        $this->defaultModel = config('prism.providers.'.$providerName.'.model', env('PRISM_OPENAI_MODEL', 'gpt-4'));
+        $this->defaultModel = config('prism.models.anthropic', 'claude-3-5-sonnet-20241022');
         $this->temperature = config('prism.temperature', 0.7);
     }
 
     public function generateResponse(string $prompt, ?string $systemPrompt = null): string
     {
-        // EMERGENCY: Disable all HTTP calls to prevent timeouts
-        Log::warning('AI service generateResponse called but disabled to prevent timeouts', [
-            'prompt_length' => strlen($prompt),
-            'system_prompt_length' => $systemPrompt ? strlen($systemPrompt) : 0,
-        ]);
+        // Check if AI service is enabled
+        if (!config('services.ai_enabled', false)) {
+            Log::warning('AI service disabled in config', [
+                'prompt_length' => strlen($prompt),
+                'system_prompt_length' => $systemPrompt ? strlen($systemPrompt) : 0,
+            ]);
+            throw new \Exception('AI service disabled - set AI_ENABLED=true in .env to enable');
+        }
         
-        throw new \Exception('AI service temporarily disabled to prevent timeout issues');
-        
-        /* HTTP calls disabled due to persistent timeout issues
         try {
             $messages = [];
 
@@ -59,14 +59,14 @@ class AIService
 
             $clientOptions = [
                 'base_uri' => $providerConfig['url'] ?? null,
-                'timeout' => 15, // 15 second timeout to prevent PHP script timeout
+                'timeout' => 60, // Increased timeout for web APIs
             ];
 
             // Note: Prism handles authentication automatically through its provider configuration
             // No need to manually add Authorization headers
 
             $response = Prism::text()
-                ->using('openai', $this->defaultModel, $providerConfig)
+                ->using($providerName, $this->defaultModel, $providerConfig)
                 ->usingTemperature($this->temperature)
                 ->withMessages($messages)
                 ->generate();
@@ -90,7 +90,6 @@ class AIService
 
             throw new \Exception('AI service unavailable: '.$e->getMessage());
         }
-        */
     }
 
     public function generateChatResponse(
@@ -219,19 +218,18 @@ Generate 5-8 questions that represent the typical interview experience. Return a
     }
 ]";
 
-        // EMERGENCY: Disable all AI service calls to prevent timeouts
-        // TODO: Fix HTTP client timeout configuration before re-enabling
-        Log::info('Using fallback questions (AI service disabled due to timeout issues)', [
-            'question_type' => $questionType,
-            'job_description_length' => strlen($jobDescription),
-            'candidate_profile_length' => strlen($candidateProfile),
-        ]);
+        // Check if AI service is enabled
+        if (!config('services.ai_enabled', false)) {
+            Log::info('Using fallback questions (AI service disabled)', [
+                'question_type' => $questionType,
+                'job_description_length' => strlen($jobDescription),
+                'candidate_profile_length' => strlen($candidateProfile),
+            ]);
+            return $this->getFallbackQuestions($questionType);
+        }
         
-        return $this->getFallbackQuestions($questionType);
-        
-        /* AI Service calls disabled due to persistent timeout issues
         try {
-            Log::info('Generating interview questions with OpenAI', [
+            Log::info('Generating interview questions with AI', [
                 'question_type' => $questionType,
                 'job_description_length' => strlen($jobDescription),
                 'candidate_profile_length' => strlen($candidateProfile),
@@ -245,7 +243,7 @@ Generate 5-8 questions that represent the typical interview experience. Return a
                 throw new \Exception('Invalid JSON response');
             }
 
-            Log::info('OpenAI-generated questions received', [
+            Log::info('AI-generated questions received', [
                 'question_type' => $questionType,
                 'questions_count' => count($questions ?? []),
             ]);
@@ -253,14 +251,13 @@ Generate 5-8 questions that represent the typical interview experience. Return a
             return $questions ?? [];
 
         } catch (\Exception $e) {
-            Log::warning('OpenAI question generation failed, using fallback', [
+            Log::warning('AI question generation failed, using fallback', [
                 'error' => $e->getMessage(),
                 'question_type' => $questionType,
             ]);
 
             return $this->getFallbackQuestions($questionType);
         }
-        */
     }
 
     public function evaluateAnswer(

@@ -46,4 +46,6 @@ return [
         'database' => env('REDIS_DB', 0),
     ],
 
+    'ai_enabled' => env('AI_ENABLED', false),
+
 ];
