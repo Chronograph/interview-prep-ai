@@ -20,7 +20,7 @@ class AIService
 
     public function __construct()
     {
-        $providerName = config('prism.default_provider', 'anthropic'); // Default to Anthropic
+        $providerName = config('prism.default', 'anthropic'); // Default to Anthropic
         $this->provider = match ($providerName) {
             'openai' => Provider::OpenAI,
             'anthropic' => Provider::Anthropic,
@@ -45,16 +45,8 @@ class AIService
         }
         
         try {
-            $messages = [];
-
-            if ($systemPrompt) {
-                $messages[] = new SystemMessage($systemPrompt);
-            }
-
-            $messages[] = new UserMessage($prompt);
-
             // Get provider configuration
-            $providerName = config('prism.default_provider', 'openai');
+            $providerName = config('prism.default', 'anthropic');
             $providerConfig = config("prism.providers.{$providerName}");
 
             $clientOptions = [
@@ -65,11 +57,16 @@ class AIService
             // Note: Prism handles authentication automatically through its provider configuration
             // No need to manually add Authorization headers
 
-            $response = Prism::text()
+            $prism = Prism::text()
                 ->using($providerName, $this->defaultModel, $providerConfig)
-                ->usingTemperature($this->temperature)
-                ->withMessages($messages)
-                ->generate();
+                ->usingTemperature($this->temperature);
+
+            // Handle system prompt correctly for different providers
+            if ($systemPrompt) {
+                $prism = $prism->withSystemPrompt($systemPrompt);
+            }
+
+            $response = $prism->withPrompt($prompt)->generate();
 
             return trim($response->text);
 
@@ -192,28 +189,42 @@ Return JSON with:
         // Get interview type specific instructions
         $typeInstructions = $this->getInterviewTypeInstructions($questionType);
         
-        $prompt = "Generate a representative mix of interview questions based on:
+        $prompt = "Generate SPECIFIC, TAILORED interview questions based on these exact details:
 
-Job Description: {$jobDescription}
-Candidate Profile: {$candidateProfile}
-Interview Type: {$questionType}
+JOB DESCRIPTION:
+{$jobDescription}
 
-Interview Type Instructions:
+CANDIDATE PROFILE/RESUME:
+{$candidateProfile}
+
+INTERVIEW TYPE: {$questionType}
+
+INTERVIEW TYPE INSTRUCTIONS:
 {$typeInstructions}
 
-Create a realistic mix of interview questions that a job seeker would actually encounter in this type of interview for this role. The questions should:
-- Cover different aspects of the role and requirements
-- Include a variety of question styles (open-ended, scenario-based, technical, behavioral)
-- Range from foundational to advanced based on the role level
-- Be specific to the job and company context when possible
+CRITICAL REQUIREMENTS:
+1. Questions MUST reference specific technologies, companies, or experiences mentioned in the job description
+2. Questions MUST connect to the candidate's specific background and experience
+3. Questions MUST be tailored to this exact role and company context
+4. Avoid generic questions - make them specific to this job posting
+5. Reference specific skills, tools, or experiences mentioned in both the job and resume
 
-Generate 5-8 questions that represent the typical interview experience. Return as JSON array:
+Examples of GOOD specific questions:
+- \"At Square, you mentioned handling \$2B+ in transactions. How would you apply that experience to our payment processing challenges?\"
+- \"Since you have experience with fraud detection at PayPal, how would you approach building fraud prevention for our fintech platform?\"
+
+Examples of BAD generic questions:
+- \"Tell me about yourself\"
+- \"How do you solve problems?\"
+- \"What are your strengths?\"
+
+Generate 5-8 SPECIFIC, TAILORED questions that directly relate to this job and candidate. Return as JSON array:
 [
     {
-        \"question\": \"...\",
+        \"question\": \"Specific question referencing job/candidate details\",
         \"category\": \"behavioral|technical|situational|cultural_fit|experience\",
         \"difficulty\": \"easy|medium|hard\",
-        \"expected_answer_points\": [\"point1\", \"point2\"],
+        \"expected_answer_points\": [\"specific point1\", \"specific point2\"],
         \"question_style\": \"open_ended|scenario|technical_challenge|behavioral_star\"
     }
 ]";

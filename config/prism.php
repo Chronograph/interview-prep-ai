@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'default' => env('PRISM_DEFAULT_PROVIDER', 'lmstudio'),
+    'default' => env('PRISM_DEFAULT_PROVIDER', 'anthropic'),
 
     /*
     |--------------------------------------------------------------------------
@@ -41,6 +41,7 @@ return [
         'anthropic' => [
             'driver' => 'anthropic',
             'api_key' => env('PRISM_ANTHROPIC_API_KEY'),
+            'version' => '2023-06-01',
         ],
 
         'ollama' => [
@@ -62,7 +63,7 @@ return [
     'models' => [
         'lmstudio' => env('PRISM_LMSTUDIO_MODEL', 'local-model'),
         'openai' => env('PRISM_OPENAI_MODEL', 'gpt-4'),
-        'anthropic' => env('PRISM_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022'),
+        'anthropic' => env('PRISM_ANTHROPIC_MODEL', 'claude-3-haiku-20240307'),
         'ollama' => env('PRISM_OLLAMA_MODEL', 'llama3.2'),
     ],
 

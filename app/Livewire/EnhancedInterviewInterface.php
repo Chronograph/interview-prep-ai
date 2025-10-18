@@ -202,9 +202,19 @@ class EnhancedInterviewInterface extends Component
     public function generateInitialQuestions()
     {
         try {
-            // Simplified context without relationship loading to prevent memory issues
-            $resumeText = 'General resume information'; // Simplified to avoid database queries
-            $jobDescription = 'General interview practice'; // Simplified to avoid database queries
+            // Get actual job description and resume content
+            $resumeText = 'General resume information'; // Default fallback
+            $jobDescription = 'General interview practice'; // Default fallback
+            
+            // Try to get real job posting data
+            if ($this->session->jobPosting) {
+                $jobDescription = $this->session->jobPosting->description ?? 'General interview practice';
+            }
+            
+            // Try to get real resume data
+            if ($this->session->jobPosting && $this->session->jobPosting->resume) {
+                $resumeText = $this->session->jobPosting->resume->content ?? 'General resume information';
+            }
             
             // Determine number of questions based on difficulty
             $questionCount = match($this->session->difficulty_level) {
@@ -214,14 +224,26 @@ class EnhancedInterviewInterface extends Component
                 default => 10
             };
             
-            // AI service disabled to prevent timeouts - using fallback questions
-            \Log::info('Using fallback questions (AI service disabled due to timeout issues)', [
+            // Use AI service to generate specific questions
+            \Log::info('Generating interview questions with AI', [
                 'question_type' => $this->session->session_type,
                 'job_description_length' => strlen($jobDescription),
                 'candidate_profile_length' => strlen($resumeText)
             ]);
             
-            $questions = $this->getFallbackQuestions($this->session->session_type);
+            try {
+                $questions = $this->aiService->generateInterviewQuestions(
+                    $jobDescription,
+                    $resumeText,
+                    $this->session->session_type
+                );
+            } catch (\Exception $e) {
+                \Log::warning('AI question generation failed, using fallback', [
+                    'error' => $e->getMessage(),
+                    'question_type' => $this->session->session_type,
+                ]);
+                $questions = $this->getFallbackQuestions($this->session->session_type);
+            }
             
             // Limit to requested count and add metadata
             $questions = array_slice($questions, 0, $questionCount);
