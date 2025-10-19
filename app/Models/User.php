@@ -48,6 +48,18 @@ class User extends Authenticatable
         'onboarding_completed',
         'profile_completion_percentage',
         'last_active_at',
+        // New comprehensive profile fields
+        'headline',
+        'professional_summary',
+        'objective',
+        'work_experience',
+        'projects',
+        'languages',
+        'awards',
+        'publications',
+        'volunteer_work',
+        'interests',
+        'target_industries',
     ];
 
     /**
@@ -77,6 +89,14 @@ class User extends Authenticatable
             'skills' => 'array',
             'certifications' => 'array',
             'education' => 'array',
+            'work_experience' => 'array',
+            'projects' => 'array',
+            'languages' => 'array',
+            'awards' => 'array',
+            'publications' => 'array',
+            'volunteer_work' => 'array',
+            'interests' => 'array',
+            'target_industries' => 'array',
             'preferred_interview_types' => 'array',
             'availability_schedule' => 'array',
             'notification_preferences' => 'array',
@@ -231,6 +251,10 @@ class User extends Authenticatable
         $fields = [
             'name', 'email', 'phone', 'location', 'bio', 'current_title',
             'current_company', 'years_experience', 'target_roles', 'skills',
+            'headline', 'professional_summary', 'work_experience', 'education',
+            'projects', 'certifications', 'languages', 'awards', 'publications',
+            'volunteer_work', 'interests', 'target_industries', 'linkedin_url',
+            'github_url', 'portfolio_url'
         ];
 
         $completed = 0;

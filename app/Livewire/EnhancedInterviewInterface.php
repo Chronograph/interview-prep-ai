@@ -213,7 +213,7 @@ class EnhancedInterviewInterface extends Component
             
             // Try to get real resume data
             if ($this->session->jobPosting && $this->session->jobPosting->resume) {
-                $resumeText = $this->session->jobPosting->resume->content ?? 'General resume information';
+                $resumeText = $this->formatResumeForAI($this->session->jobPosting->resume);
             }
             
             // Determine number of questions based on difficulty
@@ -1044,6 +1044,137 @@ class EnhancedInterviewInterface extends Component
                 'lighting' => 'Adequate'
             ]
         ];
+    }
+
+    /**
+     * Format resume data for AI consumption, excluding personal information
+     */
+    private function formatResumeForAI($resume): string
+    {
+        $formatted = [];
+        
+        // Professional Summary and Headline
+        if ($resume->headline) {
+            $formatted[] = "Professional Headline: " . $resume->headline;
+        }
+        
+        if ($resume->summary) {
+            $formatted[] = "Professional Summary: " . $resume->summary;
+        }
+        
+        if ($resume->objective) {
+            $formatted[] = "Career Objective: " . $resume->objective;
+        }
+        
+        // Work Experience
+        if ($resume->experience && is_array($resume->experience)) {
+            $formatted[] = "\nWork Experience:";
+            foreach ($resume->experience as $job) {
+                $jobText = "";
+                if (isset($job['title'])) $jobText .= $job['title'];
+                if (isset($job['company'])) $jobText .= " at " . $job['company'];
+                if (isset($job['duration'])) $jobText .= " (" . $job['duration'] . ")";
+                if (isset($job['description'])) $jobText .= "\n  " . $job['description'];
+                if (isset($job['achievements']) && is_array($job['achievements'])) {
+                    $jobText .= "\n  Key Achievements: " . implode(', ', $job['achievements']);
+                }
+                $formatted[] = "- " . $jobText;
+            }
+        }
+        
+        // Skills and Technologies
+        if ($resume->skills && is_array($resume->skills)) {
+            $formatted[] = "\nSkills & Technologies: " . implode(', ', $resume->skills);
+        }
+        
+        // Education
+        if ($resume->education && is_array($resume->education)) {
+            $formatted[] = "\nEducation:";
+            foreach ($resume->education as $edu) {
+                $eduText = "";
+                if (isset($edu['degree'])) $eduText .= $edu['degree'];
+                if (isset($edu['institution'])) $eduText .= " from " . $edu['institution'];
+                if (isset($edu['year'])) $eduText .= " (" . $edu['year'] . ")";
+                if (isset($edu['gpa'])) $eduText .= " - GPA: " . $edu['gpa'];
+                $formatted[] = "- " . $eduText;
+            }
+        }
+        
+        // Certifications
+        if ($resume->certifications && is_array($resume->certifications)) {
+            $formatted[] = "\nCertifications: " . implode(', ', $resume->certifications);
+        }
+        
+        // Projects
+        if ($resume->projects && is_array($resume->projects)) {
+            $formatted[] = "\nProjects:";
+            foreach ($resume->projects as $project) {
+                $projectText = "";
+                if (isset($project['name'])) $projectText .= $project['name'];
+                if (isset($project['description'])) $projectText .= " - " . $project['description'];
+                if (isset($project['technologies']) && is_array($project['technologies'])) {
+                    $projectText .= " (Technologies: " . implode(', ', $project['technologies']) . ")";
+                }
+                $formatted[] = "- " . $projectText;
+            }
+        }
+        
+        // Languages
+        if ($resume->languages && is_array($resume->languages)) {
+            $formatted[] = "\nLanguages: " . implode(', ', $resume->languages);
+        }
+        
+        // Awards
+        if ($resume->awards && is_array($resume->awards)) {
+            $formatted[] = "\nAwards & Recognition: " . implode(', ', $resume->awards);
+        }
+        
+        // Publications
+        if ($resume->publications && is_array($resume->publications)) {
+            $formatted[] = "\nPublications: " . implode(', ', $resume->publications);
+        }
+        
+        // Volunteer Work
+        if ($resume->volunteer_work && is_array($resume->volunteer_work)) {
+            $formatted[] = "\nVolunteer Experience:";
+            foreach ($resume->volunteer_work as $volunteer) {
+                $volunteerText = "";
+                if (isset($volunteer['role'])) $volunteerText .= $volunteer['role'];
+                if (isset($volunteer['organization'])) $volunteerText .= " at " . $volunteer['organization'];
+                if (isset($volunteer['duration'])) $volunteerText .= " (" . $volunteer['duration'] . ")";
+                if (isset($volunteer['description'])) $volunteerText .= " - " . $volunteer['description'];
+                $formatted[] = "- " . $volunteerText;
+            }
+        }
+        
+        // Interests (professional relevance)
+        if ($resume->interests && is_array($resume->interests)) {
+            $formatted[] = "\nProfessional Interests: " . implode(', ', $resume->interests);
+        }
+        
+        // Additional Professional Links
+        if ($resume->linkedin_url) {
+            $formatted[] = "\nLinkedIn Profile: Available";
+        }
+        
+        if ($resume->portfolio_url) {
+            $formatted[] = "Portfolio: Available";
+        }
+        
+        if ($resume->github_url) {
+            $formatted[] = "GitHub Profile: Available";
+        }
+        
+        // If no structured data is available, fall back to raw content (excluding personal info)
+        if (empty($formatted) && $resume->raw_content) {
+            $rawContent = $resume->raw_content;
+            // Remove common personal information patterns
+            $rawContent = preg_replace('/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/', '[EMAIL]', $rawContent);
+            $rawContent = preg_replace('/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/', '[PHONE]', $rawContent);
+            $formatted[] = $rawContent;
+        }
+        
+        return implode("\n", $formatted) ?: 'General resume information';
     }
 
     public function render()
