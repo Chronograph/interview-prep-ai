@@ -109,8 +109,9 @@ class EnhancedInterviewInterface extends Component
     public function loadSession()
     {
         try {
-            // Simplified loading without relationships to avoid timeouts
-            $this->session = InterviewSession::where('user_id', Auth::id())
+            // Load session with job posting relationship
+            $this->session = InterviewSession::with('jobPosting')
+                ->where('user_id', Auth::id())
                 ->findOrFail($this->sessionId);
 
             // Skip authorization for now to avoid potential issues
@@ -131,6 +132,21 @@ class EnhancedInterviewInterface extends Component
             ]);
             // Redirect back to practice sessions if session loading fails
             return redirect()->route('practice.sessions');
+        }
+    }
+
+    public function loadSessionData()
+    {
+        // Load session with job posting relationship
+        $this->session->load('jobPosting');
+        
+        // Load questions and responses
+        $this->loadQuestions();
+        $this->loadInterviewReadiness();
+        
+        // Set current question after questions are loaded
+        if (!empty($this->questions)) {
+            $this->setCurrentQuestion();
         }
     }
 
@@ -235,14 +251,15 @@ class EnhancedInterviewInterface extends Component
                 $questions = $this->aiService->generateInterviewQuestions(
                     $jobDescription,
                     $resumeText,
-                    $this->session->session_type
+                    $this->session->session_type,
+                    $this->session->difficulty_level
                 );
             } catch (\Exception $e) {
                 \Log::warning('AI question generation failed, using fallback', [
                     'error' => $e->getMessage(),
                     'question_type' => $this->session->session_type,
                 ]);
-                $questions = $this->getFallbackQuestions($this->session->session_type);
+                $questions = $this->getFallbackQuestions($this->session->session_type, $questionCount);
             }
             
             // Limit to requested count and add metadata
@@ -578,7 +595,7 @@ class EnhancedInterviewInterface extends Component
         return implode(' ', $text) ?: 'Resume information not available';
     }
 
-    private function getFallbackQuestions(string $sessionType): array
+    private function getFallbackQuestions(string $sessionType, int $questionCount = 10): array
     {
         $fallbackQuestions = [
             'behavioral' => [
@@ -933,7 +950,8 @@ class EnhancedInterviewInterface extends Component
             ]
         ];
 
-        return $fallbackQuestions[$sessionType] ?? $fallbackQuestions['behavioral'];
+        $questions = $fallbackQuestions[$sessionType] ?? $fallbackQuestions['behavioral'];
+        return array_slice($questions, 0, $questionCount);
     }
 
     private function getFallbackEvaluation(): array

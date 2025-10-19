@@ -184,7 +184,8 @@ Return JSON with:
     public function generateInterviewQuestions(
         string $jobDescription,
         string $candidateProfile,
-        string $questionType = 'behavioral'
+        string $questionType = 'behavioral',
+        string $difficulty = 'medium'
     ): array {
         // Get interview type specific instructions
         $typeInstructions = $this->getInterviewTypeInstructions($questionType);
@@ -218,7 +219,7 @@ Examples of BAD generic questions:
 - \"How do you solve problems?\"
 - \"What are your strengths?\"
 
-Generate 5-8 SPECIFIC, TAILORED questions that directly relate to this job and candidate. Return as JSON array:
+Generate EXACTLY {$this->getQuestionCountForDifficulty($difficulty)} SPECIFIC, TAILORED questions that directly relate to this job and candidate. Return as JSON array:
 [
     {
         \"question\": \"Specific question referencing job/candidate details\",
@@ -236,7 +237,7 @@ Generate 5-8 SPECIFIC, TAILORED questions that directly relate to this job and c
                 'job_description_length' => strlen($jobDescription),
                 'candidate_profile_length' => strlen($candidateProfile),
             ]);
-            return $this->getFallbackQuestions($questionType);
+            return $this->getFallbackQuestions($questionType, $difficulty);
         }
         
         try {
@@ -267,8 +268,18 @@ Generate 5-8 SPECIFIC, TAILORED questions that directly relate to this job and c
                 'question_type' => $questionType,
             ]);
 
-            return $this->getFallbackQuestions($questionType);
+            return $this->getFallbackQuestions($questionType, $difficulty);
         }
+    }
+
+    private function getQuestionCountForDifficulty(string $difficulty): int
+    {
+        return match($difficulty) {
+            'easy' => 5,
+            'medium' => 10,
+            'hard' => 15,
+            default => 10
+        };
     }
 
     public function evaluateAnswer(
@@ -369,7 +380,7 @@ Generate a cheat sheet in JSON format:
         }
     }
 
-    private function getFallbackQuestions(string $questionType): array
+    private function getFallbackQuestions(string $questionType, string $difficulty = 'medium'): array
     {
         $fallbackQuestions = [
             'behavioral' => [
@@ -489,7 +500,9 @@ Generate a cheat sheet in JSON format:
             ],
         ];
 
-        return $fallbackQuestions[$questionType] ?? $fallbackQuestions['behavioral'];
+        $questions = $fallbackQuestions[$questionType] ?? $fallbackQuestions['behavioral'];
+        $questionCount = $this->getQuestionCountForDifficulty($difficulty);
+        return array_slice($questions, 0, $questionCount);
     }
 
     private function getFallbackCheatSheet(string $topic): array

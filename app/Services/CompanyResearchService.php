@@ -293,45 +293,118 @@ Return as a JSON array of strings.";
 
     private function getFallbackJobAnalysis(string $url): array
     {
-        // Extract company name from URL if possible
+        // Extract company name and job title from URL if possible
         $companyName = $this->extractCompanyFromUrl($url);
+        $jobTitle = $this->extractJobTitleFromUrl($url);
         
         return [
-            'title' => 'Product Manager',
+            'title' => $jobTitle,
             'company' => $companyName,
-            'description' => "We are looking for an experienced Product Manager to join our {$companyName} team. This role involves leading product strategy, working with cross-functional teams, and driving product development initiatives.",
+            'description' => "We are looking for an experienced {$jobTitle} to join our {$companyName} team. This role involves leading strategic initiatives, working with cross-functional teams, and driving business growth.",
             'requirements' => [
-                '3+ years of product management experience',
+                '3+ years of relevant experience',
                 'Strong analytical and problem-solving skills',
                 'Excellent communication and leadership abilities',
-                'Experience with agile development methodologies',
-                'Technical background preferred'
+                'Experience with strategic planning and execution',
+                'Bachelor\'s degree preferred'
             ],
             'skills' => [
-                'Product Management',
-                'Agile/Scrum',
-                'Data Analytics',
+                'Strategic Planning',
                 'Leadership',
-                'Strategic Thinking',
-                'User Research',
-                'Project Management'
+                'Data Analytics',
+                'Project Management',
+                'Communication',
+                'Problem Solving',
+                'Business Development'
             ],
-            'location' => 'Remote / San Francisco, CA',
+            'location' => 'Remote / Washington, DC',
             'job_type' => 'Full-time',
-            'experience_level' => 'Mid-level',
+            'experience_level' => 'Senior-level',
         ];
     }
 
     private function extractCompanyFromUrl(string $url): string
     {
-        // Try to extract company name from URL
+        // Handle specific known company domains
+        $companyMappings = [
+            'washpost.wd5.myworkdayjobs.com' => 'The Washington Post',
+            'jobs.apple.com' => 'Apple',
+            'careers.google.com' => 'Google',
+            'jobs.microsoft.com' => 'Microsoft',
+            'careers.meta.com' => 'Meta',
+            'jobs.netflix.com' => 'Netflix',
+            'careers.amazon.com' => 'Amazon',
+            'jobs.spotify.com' => 'Spotify',
+        ];
+        
         $parsedUrl = parse_url($url);
         $host = $parsedUrl['host'] ?? '';
         
-        // Remove common domain parts
-        $host = str_replace(['www.', '.com', '.org', '.net', '.io'], '', $host);
+        // Check if we have a known mapping
+        if (isset($companyMappings[$host])) {
+            return $companyMappings[$host];
+        }
         
-        // Convert to title case
+        // Try to extract company name from URL path for workday jobs
+        if (strpos($host, 'workdayjobs.com') !== false) {
+            // Extract company from subdomain (e.g., washpost.wd5.myworkdayjobs.com -> The Washington Post)
+            $subdomain = explode('.', $host)[0];
+            $companyMappings = [
+                'washpost' => 'The Washington Post',
+                'apple' => 'Apple',
+                'google' => 'Google',
+                'microsoft' => 'Microsoft',
+                'meta' => 'Meta',
+                'netflix' => 'Netflix',
+                'amazon' => 'Amazon',
+                'spotify' => 'Spotify',
+            ];
+            
+            if (isset($companyMappings[$subdomain])) {
+                return $companyMappings[$subdomain];
+            }
+        }
+        
+        // Fallback: Remove common domain parts and convert to title case
+        $host = str_replace(['www.', '.com', '.org', '.net', '.io'], '', $host);
         return ucwords(str_replace(['.', '-', '_'], ' ', $host));
+    }
+
+    private function extractJobTitleFromUrl(string $url): string
+    {
+        // Extract job title from URL path
+        $parsedUrl = parse_url($url);
+        $path = $parsedUrl['path'] ?? '';
+        
+        // Handle workday jobs URL format: /en-US/company/details/Job-Title_JR-123456
+        if (preg_match('/\/details\/([^_]+)_JR-\d+/', $path, $matches)) {
+            $jobTitle = $matches[1];
+            // Convert dashes to spaces and title case
+            $jobTitle = str_replace('-', ' ', $jobTitle);
+            return ucwords($jobTitle);
+        }
+        
+        // Handle other common patterns
+        if (preg_match('/\/jobs\/([^\/]+)/', $path, $matches)) {
+            $jobTitle = $matches[1];
+            $jobTitle = str_replace(['-', '_'], ' ', $jobTitle);
+            return ucwords($jobTitle);
+        }
+        
+        // Fallback based on URL patterns
+        if (strpos($url, 'director') !== false) {
+            return 'Director';
+        } elseif (strpos($url, 'manager') !== false) {
+            return 'Manager';
+        } elseif (strpos($url, 'engineer') !== false) {
+            return 'Engineer';
+        } elseif (strpos($url, 'analyst') !== false) {
+            return 'Analyst';
+        } elseif (strpos($url, 'specialist') !== false) {
+            return 'Specialist';
+        }
+        
+        // Default fallback
+        return 'Professional';
     }
 }

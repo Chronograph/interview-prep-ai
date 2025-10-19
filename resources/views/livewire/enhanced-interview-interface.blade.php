@@ -1,12 +1,24 @@
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
-    <div class="container mx-auto px-4 py-8">
+        <div class="container mx-auto px-4 py-8">
+        
+        <!-- Interview Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                {{ $session->jobPosting->title ?? 'Interview Practice' }}
+            </h1>
+            <div class="text-lg text-gray-600 dark:text-gray-400">
+                {{ $session->jobPosting->company ?? 'General Practice' }} • AI-Powered Practice Session • 
+                <span class="capitalize font-semibold">{{ $session->difficulty_level }}</span> 
+                ({{ $totalQuestions }} questions)
+            </div>
+        </div>
         
         <!-- Interview Readiness Dashboard -->
         <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8 mb-8">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                     Interview Readiness
-                </h1>
+                </h2>
                 <button wire:click="completeSession" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all duration-300">
                     Complete Session
                 </button>
@@ -17,11 +29,11 @@
                 <div class="grid md:grid-cols-3 gap-4">
                     <div class="text-center">
                         <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Company</div>
-                        <div class="font-semibold text-gray-900 dark:text-gray-100">General Practice</div>
+                        <div class="font-semibold text-gray-900 dark:text-gray-100">{{ $session->jobPosting->company ?? 'General Practice' }}</div>
                     </div>
                     <div class="text-center">
                         <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Role</div>
-                        <div class="font-semibold text-gray-900 dark:text-gray-100">Interview Practice</div>
+                        <div class="font-semibold text-gray-900 dark:text-gray-100">{{ $session->jobPosting->title ?? 'Interview Practice' }}</div>
                     </div>
                     <div class="text-center">
                         <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Difficulty</div>
@@ -351,9 +363,9 @@
 
                     <!-- Individual Recording Entries -->
                     <div class="space-y-3">
-                        @foreach($currentQuestion['attempts'] as $attempt)
+                        @foreach($currentQuestion['attempts'] as $index => $attempt)
                         <div class="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                            <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center gap-4">
                                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                         {{ \Carbon\Carbon::parse($attempt['submitted_at'])->format('M j, g:i A') }}
@@ -378,9 +390,43 @@
                             </div>
                             
                             <!-- Progress Bar -->
-                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-3">
                                 <div class="bg-purple-600 h-2 rounded-full" style="width: {{ ($attempt['score'] / 10) * 100 }}%"></div>
                             </div>
+                            
+                            <!-- Video Playback Section -->
+                            @if(isset($attempt['video_url']) && !empty($attempt['video_url']))
+                            <div class="mt-3">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <button onclick="playHistoryRecording('{{ $attempt['id'] }}', '{{ $attempt['video_url'] }}')" 
+                                            class="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        Play Recording
+                                    </button>
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                                        Click to watch your response
+                                    </span>
+                                </div>
+                                
+                                <!-- Hidden Video Player for this attempt -->
+                                <video id="history-video-{{ $attempt['id'] }}" 
+                                       class="w-full rounded-lg hidden" 
+                                       controls 
+                                       preload="metadata">
+                                    <source src="{{ $attempt['video_url'] }}" type="video/webm">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            @else
+                            <div class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                                <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/>
+                                </svg>
+                                No video recording available for this attempt
+                            </div>
+                            @endif
                         </div>
                         @endforeach
                     </div>
@@ -587,17 +633,23 @@ document.addEventListener('livewire:init', function () {
                     
                     // Create video blob for playback
                     const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const videoUrl = URL.createObjectURL(videoBlob);
                     
-                    // Store video URL for playback
-                    window.lastRecordedVideoUrl = videoUrl;
-                    
-                    // Send recording data to Livewire
-                    Livewire.dispatch('recording-completed', { 
-                        chunks: recordedChunks,
-                        videoUrl: videoUrl,
-                        duration: recordingTime
-                    });
+                    // Convert blob to base64 data URL for persistent storage
+                    const reader = new FileReader();
+                    reader.onload = function() {
+                        const videoUrl = reader.result; // This will be a data:video/webm;base64,... URL
+                        
+                        // Store video URL for playback
+                        window.lastRecordedVideoUrl = videoUrl;
+                        
+                        // Send recording data to Livewire
+                        Livewire.dispatch('recording-completed', { 
+                            chunks: recordedChunks,
+                            videoUrl: videoUrl,
+                            duration: recordingTime
+                        });
+                    };
+                    reader.readAsDataURL(videoBlob);
                     
                     // Auto-submit after a brief delay to show completion
                     setTimeout(() => {
@@ -676,13 +728,32 @@ function playLastRecording() {
 
 // Function to play recordings from history
 function playHistoryRecording(attemptId, videoUrl) {
+    // Hide all other history videos first
+    const allHistoryVideos = document.querySelectorAll('[id^="history-video-"]');
+    allHistoryVideos.forEach(video => {
+        if (video.id !== 'history-video-' + attemptId) {
+            video.style.display = 'none';
+        }
+    });
+    
     const videoPlayer = document.getElementById('history-video-' + attemptId);
     const playButton = event.target;
     
-    if (videoUrl) {
+    if (videoUrl && videoPlayer) {
         // Show the video player
         videoPlayer.style.display = 'block';
-        videoPlayer.src = videoUrl;
+        
+        // Ensure video URL is properly formatted
+        let finalVideoUrl = videoUrl;
+        if (!videoUrl.startsWith('data:') && !videoUrl.startsWith('blob:') && !videoUrl.startsWith('http')) {
+            // If it's not a proper URL, treat it as base64 data
+            finalVideoUrl = 'data:video/webm;base64,' + videoUrl;
+        }
+        
+        // Log for debugging
+        console.log('Playing video:', attemptId, 'URL type:', finalVideoUrl.substring(0, 50) + '...');
+        
+        videoPlayer.src = finalVideoUrl;
         
         // Update button text
         const originalText = playButton.textContent;
@@ -700,11 +771,17 @@ function playHistoryRecording(attemptId, videoUrl) {
         videoPlayer.onerror = function() {
             playButton.textContent = originalText;
             playButton.disabled = false;
-            alert('Error playing video from history.');
+            videoPlayer.style.display = 'none';
+            alert('Error playing video from history. The video format may not be supported.');
         };
         
         // Start playing
-        videoPlayer.play();
+        videoPlayer.play().catch(function(error) {
+            playButton.textContent = originalText;
+            playButton.disabled = false;
+            videoPlayer.style.display = 'none';
+            alert('Error playing video: ' + error.message);
+        });
     } else {
         alert('No video available for this attempt.');
     }
