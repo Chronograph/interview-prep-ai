@@ -601,12 +601,18 @@ document.addEventListener('livewire:init', function () {
     let recordedChunks = [];
     let mediaStream = null;
     let recordingInterval;
+    let recordingTime = 0;
     
     Livewire.on('start-recording', function () {
+        console.log('Starting video recording...');
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(function(stream) {
                 mediaStream = stream;
                 const video = document.getElementById('video-preview');
+                if (!video) {
+                    console.error('Video element not found');
+                    return;
+                }
                 video.srcObject = stream;
                 
                 mediaRecorder = new MediaRecorder(stream);
@@ -639,6 +645,12 @@ document.addEventListener('livewire:init', function () {
                     reader.onload = function() {
                         const videoUrl = reader.result; // This will be a data:video/webm;base64,... URL
                         
+                        console.log('Recording completed:', {
+                            chunksCount: recordedChunks.length,
+                            duration: recordingTime,
+                            videoUrlLength: videoUrl.length
+                        });
+                        
                         // Store video URL for playback
                         window.lastRecordedVideoUrl = videoUrl;
                         
@@ -646,6 +658,15 @@ document.addEventListener('livewire:init', function () {
                         Livewire.dispatch('recording-completed', { 
                             chunks: recordedChunks,
                             videoUrl: videoUrl,
+                            duration: recordingTime
+                        });
+                    };
+                    reader.onerror = function() {
+                        console.error('Error reading video blob');
+                        // Fallback: send without video URL
+                        Livewire.dispatch('recording-completed', { 
+                            chunks: recordedChunks,
+                            videoUrl: '',
                             duration: recordingTime
                         });
                     };
@@ -659,8 +680,8 @@ document.addEventListener('livewire:init', function () {
                 
                 mediaRecorder.start(1000); // Record in 1-second chunks
                 
-                // Start recording timer
-                let recordingTime = 0;
+                // Reset and start recording timer
+                recordingTime = 0;
                 recordingInterval = setInterval(function() {
                     recordingTime++;
                     Livewire.dispatch('recording-time-update', { time: recordingTime });
